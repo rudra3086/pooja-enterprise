@@ -1,0 +1,108 @@
+import Link from "next/link"
+import { Mail, Phone, MapPin } from "lucide-react"
+
+const footerLinks = {
+  company: [
+    { href: "/about", label: "About Us" },
+    { href: "/products", label: "Products" },
+    { href: "/contact", label: "Contact" },
+  ],
+  products: [
+    { href: "/products#tissue-napkin", label: "Tissue Napkin" },
+    { href: "/products#tissue-roll", label: "Tissue Roll" },
+    { href: "/products#ultra-soft", label: "Ultra Soft Tissue" },
+    { href: "/products#aluminium-foil", label: "Aluminium Foil" },
+  ],
+}
+
+export function Footer() {
+  return (
+    <footer className="bg-primary text-primary-foreground">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-8 py-12 md:grid-cols-2 lg:grid-cols-4 lg:py-16">
+          {/* Brand */}
+          <div className="lg:col-span-1">
+            <Link href="/" className="inline-block">
+              <span className="font-serif text-xl font-semibold">Pooja Enterprise</span>
+            </Link>
+            <p className="mt-4 text-sm text-primary-foreground/70 leading-relaxed">
+              Your trusted B2B partner for premium tissue and packaging solutions. Quality products for businesses since 2010.
+            </p>
+          </div>
+
+          {/* Company Links */}
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider">Company</h3>
+            <ul className="mt-4 space-y-3">
+              {footerLinks.company.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-primary-foreground/70 transition-colors hover:text-primary-foreground"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Products Links */}
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider">Products</h3>
+            <ul className="mt-4 space-y-3">
+              {footerLinks.products.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-primary-foreground/70 transition-colors hover:text-primary-foreground"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Contact Info */}
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider">Contact</h3>
+            <ul className="mt-4 space-y-3">
+              <li className="flex items-start gap-3">
+                <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-primary-foreground/70" />
+                <span className="text-sm text-primary-foreground/70">
+                  123 Industrial Area, Business District, City 400001
+                </span>
+              </li>
+              <li className="flex items-center gap-3">
+                <Phone className="h-4 w-4 shrink-0 text-primary-foreground/70" />
+                <a
+                  href="tel:+911234567890"
+                  className="text-sm text-primary-foreground/70 transition-colors hover:text-primary-foreground"
+                >
+                  +91 123 456 7890
+                </a>
+              </li>
+              <li className="flex items-center gap-3">
+                <Mail className="h-4 w-4 shrink-0 text-primary-foreground/70" />
+                <a
+                  href="mailto:info@poojaenterprise.com"
+                  className="text-sm text-primary-foreground/70 transition-colors hover:text-primary-foreground"
+                >
+                  info@poojaenterprise.com
+                </a>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-primary-foreground/10 py-6">
+          <p className="text-center text-sm text-primary-foreground/60">
+            &copy; {new Date().getFullYear()} Pooja Enterprise. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+  )
+}
