@@ -14,6 +14,7 @@ import { Footer } from "@/components/layout/footer"
 import { PageTransition } from "@/components/layout/page-transition"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
+import { AdvancedCustomCursor } from "@/components/advanced-custom-cursor"
 
 const contactInfo = [
   {
@@ -73,6 +74,7 @@ export default function ContactPage() {
 
   return (
     <>
+      <AdvancedCustomCursor cursorSize={45} />
       <Header />
       <main className="pt-16 lg:pt-20">
         <PageTransition>

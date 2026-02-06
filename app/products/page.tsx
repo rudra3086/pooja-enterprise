@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { PageTransition } from "@/components/layout/page-transition"
+import { AdvancedCustomCursor } from "@/components/advanced-custom-cursor"
 
 const products = [
   {
@@ -59,13 +60,14 @@ const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5, ease: "easeOut" },
+    transition: { duration: 0.5 },
   },
 }
 
 export default function ProductsPage() {
   return (
     <>
+      <AdvancedCustomCursor cursorSize={45} />
       <Header />
       <main className="pt-16 lg:pt-20">
         <PageTransition>
