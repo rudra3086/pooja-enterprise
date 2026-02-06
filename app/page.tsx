@@ -372,6 +372,7 @@ export default function HomePage() {
                           transition={{ duration: 0.2 }}
                         >
                           <Button
+                      
                             variant="outline"
                             size="sm"
                             className="w-full"
