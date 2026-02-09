@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X, ShoppingCart, User } from "lucide-react"
@@ -22,6 +23,13 @@ export function Header() {
         <div className="flex h-16 items-center justify-between lg:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/icon.svg"
+              alt="Pooja Enterprise"
+              width={32}
+              height={32}
+              className="h-8 w-8 lg:h-10 lg:w-10 header-logo"
+            />
             <span className="font-serif text-xl font-semibold tracking-tight lg:text-2xl">
               Pooja Enterprise
             </span>

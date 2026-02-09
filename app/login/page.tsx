@@ -4,6 +4,7 @@ import React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import { Eye, EyeOff, ArrowRight } from "lucide-react"
@@ -79,7 +80,14 @@ export default function LoginPage() {
       {/* Left Side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-primary text-primary-foreground p-12 flex-col justify-between">
         <div>
-          <Link href="/" className="inline-block">
+          <Link href="/" className="inline-flex items-center gap-2">
+            <Image
+              src="/icon.svg"
+              alt="Pooja Enterprise"
+              width={40}
+              height={40}
+              className="h-10 w-10"
+            />
             <span className="font-serif text-2xl font-semibold">Pooja Enterprise</span>
           </Link>
         </div>
@@ -105,7 +113,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-hero-tissue-watermark relative z-10">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -114,7 +122,14 @@ export default function LoginPage() {
         >
           {/* Mobile Logo */}
           <div className="lg:hidden mb-8">
-            <Link href="/" className="inline-block">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <Image
+                src="/icon.svg"
+                alt="Pooja Enterprise"
+                width={32}
+                height={32}
+                className="h-8 w-8 header-logo"
+              />
               <span className="font-serif text-xl font-semibold">Pooja Enterprise</span>
             </Link>
           </div>

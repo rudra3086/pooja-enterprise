@@ -72,8 +72,8 @@ export default function ProductsPage() {
       <main className="pt-16 lg:pt-20">
         <PageTransition>
           {/* Hero Section */}
-          <section className="bg-muted/50 py-16 lg:py-24">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <section className="bg-hero-tissue-watermark py-16 lg:py-24">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}

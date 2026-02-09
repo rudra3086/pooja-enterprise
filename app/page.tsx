@@ -119,10 +119,10 @@ export default function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ margin: "-100px", once: false }}
             transition={{ duration: 0.7, ease: "easeOut" }}
-            className="relative overflow-hidden bg-white"
+            className="relative overflow-hidden bg-hero-tissue-watermark-large"
           >
-            <div className="absolute inset-0 bg-grid-pattern opacity-5" />
-            <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
+            <div className="absolute inset-0 bg-grid-pattern opacity-5 z-0" />
+            <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20 z-10">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -503,7 +503,7 @@ export default function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ margin: "-100px", once: false }}
             transition={{ duration: 0.7, ease: "easeOut" }}
-            className="relative bg-gradient-to-r from-slate-800 to-slate-900 text-white py-24 lg:py-32 overflow-hidden"
+            className="relative bg-slate-800 text-white py-24 lg:py-32 overflow-hidden"
           >
             <motion.div
               initial={{ opacity: 0 }}
