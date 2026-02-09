@@ -67,47 +67,25 @@ const containerVariants = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1,
+      staggerChildren: 0.12,
+      delayChildren: 0.1,
     },
   },
 }
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 30 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.5 },
   },
 }
 
-const productCardVariants = {
-  initial: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5 },
-  },
-}
-
-const featureHoverVariants = {
-  hover: {
-    y: -8,
-    transition: { duration: 0.3, ease: "easeOut" },
-  },
-}
-
-const shadowVariants = {
-  hover: {
-    boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-  },
-}
-
-const KineticText = ({ text, className = "" }: { text: string; className?: string }) => {
+const KineticText = ({ text, className = "", style = {} }: { text: string; className?: string; style?: React.CSSProperties }) => {
   return (
     <div
       className={`flex flex-nowrap justify-center gap-[0.15em] hero-kinetic-text relative px-4 py-2 rounded-lg transition-all duration-300 ${className}`}
-      style={{ fontFamily: "'Playfair Display', serif" }}
+      style={style}
     >
       {text.split("").map((char, index) => (
         <motion.span
@@ -136,52 +114,64 @@ export default function HomePage() {
       <main className="pt-16 lg:pt-20">
         <PageTransition>
           {/* Hero Section - Modern Kinetic Typography */}
-          <section className="relative overflow-hidden bg-white">
+          <motion.section 
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ margin: "-100px", once: false }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="relative overflow-hidden bg-white"
+          >
             <div className="absolute inset-0 bg-grid-pattern opacity-5" />
-            <div className="relative mx-auto max-w-7xl px-4 py-32 sm:px-6 sm:py-40 lg:px-8 lg:py-48">
+            <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20">
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.8 }}
-                className="mx-auto max-w-4xl text-center space-y-8"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ margin: "-100px", once: false }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="mx-auto max-w-4xl text-center space-y-4"
               >
                 {/* Badge */}
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.2 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ margin: "-100px", once: false }}
+                  transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
                   className="inline-flex items-center rounded-full border-2 border-black px-6 py-2 text-sm font-bold uppercase tracking-wider"
-                  style={{ transform: "translateY(-100px)" }}
                 >
                   ● Trusted by 500+ Businesses
                 </motion.div>
 
                 {/* Main Kinetic Heading */}
-                <div className="space-y-6 -mt-8">
+                <div className="space-y-2 pt-1">
                   <KineticText
                     text="Premium Tissue & Packaging"
-                    className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tighter leading-tight"
+                    className="text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tighter leading-tight"
+                    style={{ fontFamily: "'Playfair Display', serif" }}
                   />
                   
                   <motion.div
                     initial={{ opacity: 0, scaleX: 0 }}
-                    animate={{ opacity: 1, scaleX: 1 }}
-                    transition={{ duration: 0.6, delay: 1 }}
+                    whileInView={{ opacity: 1, scaleX: 1 }}
+                    viewport={{ margin: "-100px", once: false }}
+                    transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
                     className="h-1 bg-black mx-auto w-24"
                   />
                   
                   <KineticText
                     text="Solutions"
-                    className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tighter leading-tight"
+                    className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter leading-tight"
+                    style={{ fontFamily: "'Playfair Display', serif" }}
                   />
+
                 </div>
 
                 {/* Subheading */}
                 <motion.p
                   initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 1.2 }}
-                  className="text-lg sm:text-xl font-semibold tracking-wide mx-auto max-w-2xl leading-relaxed"
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ margin: "-100px", once: false }}
+                  transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+                  className="text-base sm:text-lg font-medium tracking-wide mx-auto max-w-2xl leading-relaxed text-gray-600"
                 >
                   Quality tissue napkins, tissue rolls, and aluminum foil products designed for businesses. 
                   Customize with your brand and deliver excellence.
@@ -190,9 +180,10 @@ export default function HomePage() {
                 {/* CTA Buttons */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 1.4 }}
-                  className="flex flex-col gap-4 sm:flex-row sm:justify-center pt-8"
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ margin: "-100px", once: false }}
+                  transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
+                  className="flex flex-col gap-3 sm:flex-row sm:justify-center pt-4"
                 >
                   <Link href="/products">
                     <motion.div
@@ -233,50 +224,73 @@ export default function HomePage() {
               <motion.div
                 animate={{ y: [0, 10, 0] }}
                 transition={{ duration: 4, repeat: Infinity }}
-                className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
+                className="absolute bottom-4 left-1/2 transform -translate-x-1/2"
               >
-                <div className="text-black text-2xl">↓</div>
+                <div className="text-black text-xl">↓</div>
               </motion.div>
             </div>
-          </section>
+          </motion.section>
 
           {/* Features Section */}
-          <section className="bg-muted/50 py-20 lg:py-28">
+          <motion.section 
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ margin: "-100px", once: false }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="relative bg-gradient-to-b from-slate-50 to-white py-24 lg:py-32 overflow-hidden"
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ margin: "-100px", once: false }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/5 via-black/2 to-transparent pointer-events-none"
+            />
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-                className="text-center"
+                viewport={{ margin: "-100px", once: false }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="text-center mb-16"
               >
                 <h2 className="font-display text-3xl font-bold sm:text-4xl tracking-tight">
                   Why choose Pooja Enterprise?
                 </h2>
-                <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ margin: "-100px", once: false }}
+                  transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+                  className="mt-4 text-muted-foreground max-w-2xl mx-auto"
+                >
                   We provide end-to-end packaging solutions with a focus on quality, reliability, and customer satisfaction.
-                </p>
+                </motion.p>
               </motion.div>
+
 
               <motion.div
                 variants={containerVariants}
-                initial="hidden"
+                initial={false}
                 whileInView="visible"
-                viewport={{ once: true }}
-                className="mt-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
+                viewport={{ margin: "-50px", once: false }}
+                className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
               >
                 {features.map((feature) => (
                   <motion.div
                     key={feature.title}
+                    initial={false}
                     variants={itemVariants}
-                    whileHover="hover"
-                    custom={{ hover: featureHoverVariants.hover }}
+                    whileInView="visible"
+                    viewport={{ margin: "-50px", once: false }}
+                    whileHover={{ y: -8 }}
+                    transition={{ duration: 0.1 }}
                     className="group relative rounded-xl bg-card p-6 shadow-sm border border-border transition-all duration-300 hover:shadow-lg hover:border-primary/30"
                   >
                     <motion.div
                       initial={{ scale: 1 }}
                       whileHover={{ scale: 1.1 }}
-                      transition={{ duration: 0.3 }}
+                      transition={{ duration: 0.1 }}
                       className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground"
                     >
                       <feature.icon className="h-6 w-6" />
@@ -289,25 +303,50 @@ export default function HomePage() {
                 ))}
               </motion.div>
             </div>
-          </section>
+          </motion.section>
 
           {/* Products Preview Section */}
-          <section className="py-20 lg:py-28">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.section 
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ margin: "-100px", once: false }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="relative py-24 lg:py-32 overflow-hidden bg-white"
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ margin: "-100px", once: false }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/3 via-black/1 to-transparent pointer-events-none"
+            />
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-                className="flex flex-col items-center justify-between gap-4 sm:flex-row"
+                viewport={{ margin: "-100px", once: false }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="flex flex-col items-center justify-between gap-6 sm:flex-row mb-16"
               >
                 <div>
-                  <h2 className="font-display text-3xl font-bold sm:text-4xl tracking-tight transition-colors duration-300 hover:text-primary cursor-default">
+                  <motion.h2 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ margin: "-100px", once: false }}
+                    transition={{ duration: 0.6, delay: 0.1, ease: "easeOut" }}
+                    className="font-display text-3xl sm:text-4xl font-bold tracking-tight\"
+                  >
                     Our Products
-                  </h2>
-                  <p className="mt-2 text-muted-foreground">
+                  </motion.h2>
+                  <motion.p 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ margin: "-100px", once: false }}
+                    transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
+                    className="mt-2 text-muted-foreground"
+                  >
                     Explore our range of premium packaging products
-                  </p>
+                  </motion.p>
                 </div>
                 <Link href="/products">
                   <motion.div
@@ -327,20 +366,20 @@ export default function HomePage() {
                 variants={containerVariants}
                 initial="hidden"
                 whileInView="visible"
-                viewport={{ once: true }}
-                className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
+                viewport={{ margin: "-50px", once: false }}
+                className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
               >
-                {products.map((product) => (
+                {products.map((product, index) => (
                   <motion.div
                     key={product.id}
-                    variants={productCardVariants}
-                    initial="initial"
-                    whileInView="visible"
+                    initial={false}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ margin: "-50px", once: false }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
                     whileHover={{ 
                       y: -12,
                       boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
                     }}
-                    viewport={{ once: true }}
                     className="group relative overflow-hidden rounded-xl bg-card border border-border/40 transition-all duration-300 hover:border-primary/20"
                     style={{
                       boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.08)",
@@ -350,7 +389,7 @@ export default function HomePage() {
                       className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/5 pointer-events-none"
                       style={{ opacity: 0 }}
                       whileHover={{ opacity: 1 }}
-                      transition={{ duration: 0.3 }}
+                      transition={{ duration: 0.15 }}
                     />
                     <div className="aspect-square bg-gradient-to-br from-stone-100 to-stone-50 relative overflow-hidden">
                       <Image
@@ -386,10 +425,16 @@ export default function HomePage() {
                 ))}
               </motion.div>
             </div>
-          </section>
+          </motion.section>
 
           {/* Parallax Effect Showcase */}
-          <AdvancedParallaxSection
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ margin: "-100px", once: false }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+          >
+            <AdvancedParallaxSection
             backgroundImage="/images/tissue-napkins.jpg"
             backgroundSpeed={0.5}
             foregroundSpeed={1.2}
@@ -418,8 +463,8 @@ export default function HomePage() {
                         key={item}
                         initial={{ opacity: 0, x: -20 }}
                         whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ duration: 0.5 }}
+                        viewport={{ margin: "-50px", once: false }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
                         className="flex items-center text-neutral-700"
                       >
                         <span className="inline-block w-2 h-2 bg-neutral-900 rounded-full mr-3" />
@@ -450,21 +495,35 @@ export default function HomePage() {
               </div>
             </div>
           </AdvancedParallaxSection>
+          </motion.div>
 
           {/* CTA Section */}
-          <section className="bg-primary text-primary-foreground py-20 lg:py-28">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.section 
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ margin: "-100px", once: false }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+            className="relative bg-gradient-to-r from-slate-800 to-slate-900 text-white py-24 lg:py-32 overflow-hidden"
+          >
+            <motion.div
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ margin: "-100px", once: false }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/10 via-black/5 to-transparent pointer-events-none"
+            />
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
+                viewport={{ margin: "-100px", once: false }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
                 className="text-center"
               >
                 <h2 className="font-display text-3xl font-bold sm:text-4xl tracking-tight">
                   Ready to get started?
                 </h2>
-                <p className="mt-4 text-primary-foreground/70 max-w-2xl mx-auto">
+                <p className="text-lg text-white/80 max-w-2xl mx-auto mb-10 leading-relaxed">
                   Join hundreds of businesses that trust Pooja Enterprise for their packaging needs.
                   Register now and get access to bulk pricing and custom branding options.
                 </p>
@@ -478,7 +537,7 @@ export default function HomePage() {
                       <Button
                         size="lg"
                         variant="secondary"
-                        className="w-full sm:w-auto gap-2 group"
+                        className="w-full sm:w-auto gap-2 group font-semibold"
                       >
                         Create Account
                         <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -494,7 +553,7 @@ export default function HomePage() {
                       <Button
                         size="lg"
                         variant="outline"
-                        className="w-full sm:w-auto border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10 bg-transparent"
+                        className="w-full sm:w-auto border-white text-white hover:bg-white/10 bg-transparent font-semibold"
                       >
                         Contact Sales
                       </Button>
@@ -503,7 +562,7 @@ export default function HomePage() {
                 </div>
               </motion.div>
             </div>
-          </section>
+          </motion.section>
         </PageTransition>
       </main>
       <Footer />
