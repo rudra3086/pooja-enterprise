@@ -70,26 +70,31 @@ export function Footer() {
             <ul className="mt-4 space-y-3">
               <li className="flex items-start gap-3">
                 <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-primary-foreground/70" />
-                <span className="text-sm text-primary-foreground/70">
-                  123 Industrial Area, Business District, City 400001
-                </span>
+                <a
+                  href="https://maps.app.goo.gl/d1ojvPpPkTxxM3sy6"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary-foreground/70 transition-colors hover:text-primary-foreground hover:underline"
+                >
+                  Plot No 2900/75, Shree Sardar Patel Industrial Estate (Old Indochem) GIDC Estate Ankleswar 393002, Gujarat, India
+                </a>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-4 w-4 shrink-0 text-primary-foreground/70" />
                 <a
-                  href="tel:+911234567890"
+                  href="tel:+919913938188"
                   className="text-sm text-primary-foreground/70 transition-colors hover:text-primary-foreground"
                 >
-                  +91 123 456 7890
+                  +91 9913938188
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="h-4 w-4 shrink-0 text-primary-foreground/70" />
                 <a
-                  href="mailto:info@poojaenterprise.com"
+                  href="mailto:pooja123enterprise@gmail.com"
                   className="text-sm text-primary-foreground/70 transition-colors hover:text-primary-foreground"
                 >
-                  info@poojaenterprise.com
+                  pooja123enterprise@gmail.com
                 </a>
               </li>
             </ul>

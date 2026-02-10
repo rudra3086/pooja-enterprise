@@ -20,17 +20,18 @@ const contactInfo = [
   {
     icon: MapPin,
     title: "Address",
-    details: ["123 Industrial Area", "Business District", "City 400001"],
+    details: ["Plot No 2900/75, Shree Sardar Patel Industrial Estate", "(Old Indochem) GIDC Estate Ankleswar 393002", "Gujarat, India"],
+    link: "https://maps.app.goo.gl/d1ojvPpPkTxxM3sy6",
   },
   {
     icon: Phone,
     title: "Phone",
-    details: ["+91 123 456 7890", "+91 098 765 4321"],
+    details: ["+91 9913938188"],
   },
   {
     icon: Mail,
     title: "Email",
-    details: ["info@poojaenterprise.com", "sales@poojaenterprise.com"],
+    details: ["pooja123enterprise@gmail.com"],
   },
   {
     icon: Clock,
@@ -204,22 +205,41 @@ export default function ContactPage() {
                         </div>
                         <div>
                           <h3 className="font-semibold">{item.title}</h3>
-                          {item.details.map((detail) => (
-                            <p key={detail} className="text-sm text-muted-foreground">
-                              {detail}
-                            </p>
-                          ))}
+                          {item.title === "Address" && item.link ? (
+                            <a
+                              href={item.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-muted-foreground hover:text-primary transition-colors"
+                            >
+                              {item.details.map((detail) => (
+                                <p key={detail}>{detail}</p>
+                              ))}
+                            </a>
+                          ) : (
+                            item.details.map((detail) => (
+                              <p key={detail} className="text-sm text-muted-foreground">
+                                {detail}
+                              </p>
+                            ))
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  {/* Map Placeholder */}
-                  <div className="mt-8 aspect-video rounded-xl bg-muted flex items-center justify-center">
-                    <div className="text-center text-muted-foreground">
-                      <MapPin className="h-12 w-12 mx-auto mb-2" />
-                      <p className="text-sm">Google Maps Integration</p>
-                    </div>
+                  {/* Google Maps Embed */}
+                  <div className="mt-8 rounded-xl overflow-hidden" style={{ height: "400px" }}>
+                    <iframe
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3683.848!2d73.01932491534204!3d21.633863816328642!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1sPooja%20Enterprise!2sShree%20Sardar%20Patel%20Industrial%20Estate%2C%20Ankleswar!5e0!3m2!1sen!2sin!4v1707491400000"
+                      width="100%"
+                      height="100%"
+                      style={{ border: "none" }}
+                      allowFullScreen={true}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                      title="Pooja Enterprise Location"
+                    ></iframe>
                   </div>
                 </motion.div>
               </div>
