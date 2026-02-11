@@ -3,8 +3,9 @@
 import React from "react"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   LayoutDashboard,
@@ -44,6 +45,26 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const router = useRouter()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [userName, setUserName] = useState("User")
+
+  useEffect(() => {
+    const fetchUserSession = async () => {
+      try {
+        const response = await fetch("/api/auth/session")
+        if (response.ok) {
+          const data = await response.json()
+          if (data.user) {
+            // For clients: use contactPerson or businessName
+            const displayName = data.user.contactPerson || data.user.businessName || data.user.name || "User"
+            setUserName(displayName)
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch user session:", error)
+      }
+    }
+    fetchUserSession()
+  }, [])
 
   const handleLogout = () => {
     // In production, this would clear the session
@@ -59,6 +80,13 @@ export default function DashboardLayout({
             <div className="flex h-16 items-center justify-between">
               {/* Logo */}
               <Link href="/dashboard" className="flex items-center gap-2">
+                <Image
+                  src="/icon.svg"
+                  alt="Pooja Enterprise"
+                  width={32}
+                  height={32}
+                  className="h-8 w-8 lg:h-10 lg:w-10"
+                />
                 <span className="font-serif text-xl font-semibold">Pooja Enterprise</span>
               </Link>
 
@@ -86,23 +114,24 @@ export default function DashboardLayout({
               <div className="flex items-center gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="gap-2">
+                    <div className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent text-sm font-medium">
                       <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
                         <User className="h-4 w-4" />
                       </div>
-                      <span className="hidden sm:inline">John Doe</span>
+                      <span className="hidden sm:inline">{userName}</span>
                       <ChevronDown className="h-4 w-4" />
-                    </Button>
+                    </div>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem asChild>
-                      <Link href="/dashboard/profile" className="flex items-center gap-2 cursor-pointer">
-                        <User className="h-4 w-4" />
-                        Profile
-                      </Link>
+                    <DropdownMenuItem 
+                      onSelect={() => router.push("/dashboard/profile")}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <User className="h-4 w-4" />
+                      Profile
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
+                    <DropdownMenuItem onSelect={handleLogout} className="text-destructive cursor-pointer">
                       <LogOut className="h-4 w-4 mr-2" />
                       Logout
                     </DropdownMenuItem>

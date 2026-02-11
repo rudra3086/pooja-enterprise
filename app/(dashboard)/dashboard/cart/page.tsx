@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { motion } from "framer-motion"
 import { ShoppingCart, Minus, Plus, Trash2, Package, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -82,8 +83,19 @@ export default function CartPage() {
               <CardContent className="p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row gap-4">
                   {/* Product Image */}
-                  <div className="w-full sm:w-24 h-24 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                    <Package className="h-10 w-10 text-muted-foreground/30" />
+                  <div className="w-full sm:w-24 h-24 rounded-lg bg-muted relative overflow-hidden shrink-0">
+                    {item.image ? (
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="flex items-center justify-center w-full h-full">
+                        <Package className="h-10 w-10 text-muted-foreground/30" />
+                      </div>
+                    )}
                   </div>
 
                   {/* Product Details */}

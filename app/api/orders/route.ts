@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body: CreateOrderRequest = await request.json()
+    const body: CreateOrderRequest & { items?: any[] } = await request.json()
     const {
       shippingName,
       shippingPhone,
@@ -89,6 +89,7 @@ export async function POST(request: NextRequest) {
       shippingPostalCode,
       paymentMethod,
       customerNotes,
+      items: providedItems,
     } = body
 
     // Validate required fields
@@ -99,17 +100,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get cart
-    const cart = await getOrCreateCart(clientId)
-    
-    if (!cart.items || cart.items.length === 0) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: "Cart is empty" },
-        { status: 400 }
-      )
-    }
-
-    // Calculate totals and prepare order items
     let subtotal = 0
     const orderItems: {
       productId: string
@@ -123,27 +113,74 @@ export async function POST(request: NextRequest) {
       customization?: object
     }[] = []
 
-    for (const item of cart.items) {
-      const product = await getProductById(item.productId)
-      const variant = item.variantId ? await getVariantById(item.variantId) : undefined
+    // Get cart regardless to handle clearing later
+    const cart = await getOrCreateCart(clientId)
 
-      if (!product) continue
+    if (providedItems && providedItems.length > 0) {
+      // Use items provided in the request body
+      for (const item of providedItems) {
+        const product = await getProductById(item.productId || item.id)
+        if (!product) continue
 
-      const unitPrice = variant?.price || product.basePrice
-      const totalPrice = unitPrice * item.quantity
-      subtotal += totalPrice
+        const unitPrice = item.price || product.basePrice
+        const totalPrice = unitPrice * item.quantity
+        subtotal += totalPrice
 
-      orderItems.push({
-        productId: product.id,
-        variantId: variant?.id,
-        productName: product.name,
-        variantName: variant?.name,
-        sku: variant?.sku,
-        quantity: item.quantity,
-        unitPrice,
-        totalPrice,
-        customization: item.customization,
-      })
+        // Only include customization if it exists and is not undefined
+        const orderItem: any = {
+          productId: product.id,
+          variantId: item.variantId,
+          productName: product.name,
+          variantName: item.variantName,
+          sku: item.sku,
+          quantity: item.quantity,
+          unitPrice,
+          totalPrice,
+        }
+        
+        if (item.customization !== undefined && item.customization !== null) {
+          orderItem.customization = item.customization
+        }
+        
+        orderItems.push(orderItem)
+      }
+    } else {
+      if (!cart.items || cart.items.length === 0) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: "Cart is empty" },
+          { status: 400 }
+        )
+      }
+
+      for (const item of cart.items) {
+        const product = await getProductById(item.productId)
+        const variant = item.variantId ? await getVariantById(item.variantId) : undefined
+
+        if (!product) continue
+
+        const unitPrice = variant?.price || product.basePrice
+        const totalPrice = unitPrice * item.quantity
+        subtotal += totalPrice
+
+        orderItems.push({
+          productId: product.id,
+          variantId: variant?.id,
+          productName: product.name,
+          variantName: variant?.name,
+          sku: variant?.sku,
+          quantity: item.quantity,
+          unitPrice,
+          totalPrice,
+          customization: item.customization,
+        })
+      }
+    }
+
+    if (orderItems.length === 0) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: "No valid items to order" },
+        { status: 400 }
+      )
     }
 
     // Calculate tax (18% GST)
@@ -185,8 +222,9 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
   } catch (error) {
     console.error("Create order error:", error)
+    const errorMessage = error instanceof Error ? error.message : "Failed to create order"
     return NextResponse.json<ApiResponse>(
-      { success: false, error: "Failed to create order" },
+      { success: false, error: `Failed to create order: ${errorMessage}` },
       { status: 500 }
     )
   }

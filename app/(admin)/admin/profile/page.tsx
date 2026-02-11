@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { User, Mail, Phone, Save, Shield } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -13,10 +13,11 @@ import { useToast } from "@/hooks/use-toast"
 export default function AdminProfilePage() {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingData, setIsLoadingData] = useState(true)
   const [profile, setProfile] = useState({
-    name: "Admin User",
-    email: "admin@poojaenterprise.com",
-    phone: "+91 98765 43210",
+    name: "",
+    email: "",
+    phone: "",
   })
   const [passwords, setPasswords] = useState({
     current: "",
@@ -24,14 +25,83 @@ export default function AdminProfilePage() {
     confirm: "",
   })
 
+  useEffect(() => {
+    const fetchAdminProfile = async () => {
+      try {
+        const response = await fetch("/api/admin/auth/session")
+        if (response.ok) {
+          const data = await response.json()
+          if (data.user) {
+            const user = data.user
+            setProfile({
+              name: user.name || "",
+              email: user.email || "",
+              phone: user.phone || "",
+            })
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch admin profile:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load profile data",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoadingData(false)
+      }
+    }
+
+    fetchAdminProfile()
+  }, [])
+
   const handleSaveProfile = async () => {
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    toast({
-      title: "Profile updated",
-      description: "Your profile has been saved successfully.",
-    })
-    setIsLoading(false)
+    try {
+      const response = await fetch("/api/admin/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: profile.email,
+          name: profile.name,
+          phone: profile.phone,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        // Update local state with server response to ensure sync
+        if (data.user) {
+          setProfile({
+            name: data.user.name || "",
+            email: data.user.email || "",
+            phone: data.user.phone || "",
+          })
+        }
+        toast({
+          title: "Profile updated",
+          description: "Your profile has been saved successfully.",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: data.message || "Failed to update profile",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error saving profile:", error)
+      toast({
+        title: "Error",
+        description: "An error occurred while saving",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleChangePassword = async () => {
@@ -44,14 +114,53 @@ export default function AdminProfilePage() {
       return
     }
 
+    if (passwords.new.length < 6) {
+      toast({
+        title: "Password too short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    toast({
-      title: "Password updated",
-      description: "Your password has been changed successfully.",
-    })
-    setPasswords({ current: "", new: "", confirm: "" })
-    setIsLoading(false)
+    try {
+      const response = await fetch("/api/admin/password", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          currentPassword: passwords.current,
+          newPassword: passwords.new,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast({
+          title: "Password updated",
+          description: "Your password has been changed successfully.",
+        })
+        setPasswords({ current: "", new: "", confirm: "" })
+      } else {
+        toast({
+          title: "Error",
+          description: data.message || "Failed to update password",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error changing password:", error)
+      toast({
+        title: "Error",
+        description: "An error occurred while changing password",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -67,7 +176,12 @@ export default function AdminProfilePage() {
         </p>
       </motion.div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      {isLoadingData ? (
+        <div className="flex items-center justify-center py-12">
+          <p className="text-muted-foreground">Loading your profile...</p>
+        </div>
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-3">
         {/* Profile Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -197,7 +311,8 @@ export default function AdminProfilePage() {
             </CardContent>
           </Card>
         </motion.div>
-      </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -113,12 +113,12 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side - Login Form */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-hero-tissue-watermark relative z-10">
+      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 bg-client-login-watermark relative">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
+          className="w-full max-w-md relative z-10"
         >
           {/* Mobile Logo */}
           <div className="lg:hidden mb-8">

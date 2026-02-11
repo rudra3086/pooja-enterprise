@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { Package, Minus, Plus, ShoppingCart, Palette, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -22,40 +23,44 @@ import { useCart, type Customization } from "@/lib/cart-context"
 
 const products = [
   {
-    id: "tissue-napkin",
+    id: "prod-1",
     name: "Tissue Napkin",
     description: "Premium quality napkins for restaurants and hotels. Available in 1-ply and 2-ply options.",
     price: 25,
     unit: "pack of 100",
     customizable: true,
     inStock: true,
+    image: "/images/tissue-napkins.jpg",
   },
   {
-    id: "tissue-roll",
+    id: "prod-2",
     name: "Tissue Roll",
     description: "Soft and absorbent tissue rolls designed for commercial and industrial use.",
     price: 45,
     unit: "pack of 6",
-    customizable: true,
+    customizable: false,
     inStock: true,
+    image: "/images/tissue-rolls.jpg",
   },
   {
-    id: "ultra-soft",
+    id: "prod-3",
     name: "Ultra Soft Tissue Napkin",
     description: "Premium ultra-soft tissues for luxury hospitality experiences.",
     price: 35,
     unit: "pack of 100",
-    customizable: true,
+    customizable: false,
     inStock: true,
+    image: "/images/facial-tissue.jpg",
   },
   {
-    id: "aluminium-foil",
+    id: "prod-4",
     name: "Aluminium Foil",
     description: "Food-grade aluminum foil for packaging, wrapping, and kitchen applications.",
     price: 120,
     unit: "roll (72m)",
     customizable: false,
     inStock: true,
+    image: "/images/aluminum-foil.jpg",
   },
 ]
 
@@ -86,7 +91,7 @@ const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: "easeOut" },
+    transition: { duration: 0.4 },
   },
 }
 
@@ -117,9 +122,11 @@ export default function DashboardProductsPage() {
   const handleAddToCart = (product: typeof products[0]) => {
     addItem({
       id: product.id,
+      productId: product.id,
       name: product.name,
       description: product.description,
       price: product.price,
+      image: product.image,
       quantity: quantities[product.id],
       customizable: product.customizable,
     })
@@ -146,9 +153,11 @@ export default function DashboardProductsPage() {
 
     addItem({
       id: `${customizeProduct.id}-custom-${Date.now()}`,
+      productId: customizeProduct.id,
       name: `${customizeProduct.name} (Customized)`,
       description: customizeProduct.description,
       price: customizeProduct.price,
+      image: customizeProduct.image,
       quantity: quantities[customizeProduct.id],
       customizable: true,
       customization: customizationData,
@@ -194,11 +203,16 @@ export default function DashboardProductsPage() {
       >
         {products.map((product) => (
           <motion.div key={product.id} variants={itemVariants}>
-            <Card className="overflow-hidden">
-              <div className="flex flex-col sm:flex-row">
+            <Card className="overflow-hidden h-full p-0">
+              <div className="flex flex-col sm:flex-row h-full">
                 {/* Product Image */}
-                <div className="sm:w-1/3 aspect-square sm:aspect-auto bg-muted relative flex items-center justify-center">
-                  <Package className="h-16 w-16 text-muted-foreground/30" />
+                <div className="sm:w-1/3 min-h-[250px] sm:min-h-full bg-muted relative overflow-hidden shrink-0">
+                  <Image
+                    src={product.image || "/placeholder.svg"}
+                    alt={product.name}
+                    fill
+                    className="object-cover"
+                  />
                   {product.customizable && (
                     <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground">
                       Customizable

@@ -262,4 +262,76 @@
     box-shadow: inset -100px -100px 200px rgba(0, 0, 0, 0.03), 
                 inset 100px 100px 200px rgba(0, 0, 0, 0.02);
   }
+
+  .bg-client-login-watermark {
+    background: linear-gradient(135deg, #fafafa 0%, #ffffff 25%, #f0f0f0 50%, #ffffff 75%, #fafafa 100%);
+    background-size: 400% 400%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bg-client-login-watermark::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    height: 400px;
+    background-image: url('/icon.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.05;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .bg-client-login-watermark::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.01) 10px, rgba(0, 0, 0, 0.01) 20px),
+      repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.01) 10px, rgba(0, 0, 0, 0.01) 20px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .bg-admin-login-watermark {
+    background: linear-gradient(135deg, #fafafa 0%, #ffffff 25%, #f0f0f0 50%, #ffffff 75%, #fafafa 100%);
+    background-size: 400% 400%;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bg-admin-login-watermark::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 400px;
+    height: 400px;
+    background-image: url('/icon.svg');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.05;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .bg-admin-login-watermark::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.01) 10px, rgba(0, 0, 0, 0.01) 20px),
+      repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.01) 10px, rgba(0, 0, 0, 0.01) 20px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 1;
+  }
 }

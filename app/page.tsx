@@ -37,25 +37,25 @@ const features = [
 
 const products = [
   {
-    id: "tissue-napkin",
+    id: "prod-1",
     name: "Tissue Napkin",
     description: "Premium quality napkins for restaurants and hotels.",
     image: "/images/tissue-napkins.jpg",
   },
   {
-    id: "tissue-roll",
+    id: "prod-2",
     name: "Tissue Roll",
     description: "Soft and absorbent tissue rolls for commercial use.",
     image: "/images/tissue-rolls.jpg",
   },
   {
-    id: "ultra-soft",
+    id: "prod-3",
     name: "Ultra Soft Tissue",
     description: "Extra soft tissues for premium hospitality experiences.",
     image: "/images/facial-tissue.jpg",
   },
   {
-    id: "aluminium-foil",
+    id: "prod-4",
     name: "Aluminium Foil",
     description: "Food-grade aluminum foil for packaging and kitchen use.",
     image: "/images/aluminum-foil.jpg",

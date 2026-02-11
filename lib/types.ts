@@ -23,6 +23,7 @@ export interface Admin {
   id: string
   email: string
   name: string
+  phone?: string
   role: "super_admin" | "admin" | "manager"
   avatarUrl?: string
   isActive: boolean

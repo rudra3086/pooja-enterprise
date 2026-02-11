@@ -258,7 +258,7 @@ export default function OrdersPage() {
                       })}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {order.items.length} {order.items.length === 1 ? "item" : "items"}
+                      {order.items?.length || 0} {(order.items?.length || 0) === 1 ? "item" : "items"}
                     </p>
                   </div>
 
@@ -315,7 +315,7 @@ export default function OrdersPage() {
                 {/* Items */}
                 <div className="space-y-3">
                   <h4 className="font-medium">Items</h4>
-                  {selectedOrder.items.map((item, index) => (
+                  {(selectedOrder.items || []).map((item, index) => (
                     <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded bg-background flex items-center justify-center">

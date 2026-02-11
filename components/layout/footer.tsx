@@ -8,10 +8,10 @@ const footerLinks = {
     { href: "/contact", label: "Contact" },
   ],
   products: [
-    { href: "/products#tissue-napkin", label: "Tissue Napkin" },
-    { href: "/products#tissue-roll", label: "Tissue Roll" },
-    { href: "/products#ultra-soft", label: "Ultra Soft Tissue" },
-    { href: "/products#aluminium-foil", label: "Aluminium Foil" },
+    { href: "/products#prod-1", label: "Tissue Napkin" },
+    { href: "/products#prod-2", label: "Tissue Roll" },
+    { href: "/products#prod-3", label: "Ultra Soft Tissue" },
+    { href: "/products#prod-4", label: "Aluminium Foil" },
   ],
 }
 
@@ -103,9 +103,17 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="border-t border-primary-foreground/10 py-6">
-          <p className="text-center text-sm text-primary-foreground/60">
-            &copy; {new Date().getFullYear()} Pooja Enterprise. All rights reserved.
-          </p>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p className="text-center text-sm text-primary-foreground/60">
+              &copy; {new Date().getFullYear()} Pooja Enterprise. All rights reserved.
+            </p>
+            <Link
+              href="/admin/login"
+              className="text-sm text-primary-foreground/40 hover:text-primary-foreground/70 transition-colors"
+            >
+              Admin
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

@@ -12,7 +12,7 @@ import { AdvancedCustomCursor } from "@/components/advanced-custom-cursor"
 
 const products = [
   {
-    id: "tissue-napkin",
+    id: "prod-1",
     name: "Tissue Napkin",
     description: "Premium quality napkins perfect for restaurants, hotels, and catering services. Available in various sizes and ply options.",
     features: ["1-ply and 2-ply options", "Multiple size variants", "Custom printing available", "Bulk discounts"],
@@ -20,7 +20,7 @@ const products = [
     customizable: true,
   },
   {
-    id: "tissue-roll",
+    id: "prod-2",
     name: "Tissue Roll",
     description: "Soft and absorbent tissue rolls designed for commercial and industrial use. High sheet count per roll for cost efficiency.",
     features: ["High absorbency", "Soft texture", "Large sheet count", "Eco-friendly options"],
@@ -28,7 +28,7 @@ const products = [
     customizable: true,
   },
   {
-    id: "ultra-soft",
+    id: "prod-3",
     name: "Ultra Soft Tissue Napkin",
     description: "Premium ultra-soft tissues for luxury hospitality experiences. Ideal for fine dining and high-end establishments.",
     features: ["Extra soft texture", "Premium quality", "Elegant presentation", "Custom branding"],
@@ -36,7 +36,7 @@ const products = [
     customizable: true,
   },
   {
-    id: "aluminium-foil",
+    id: "prod-4",
     name: "Aluminium Foil",
     description: "Food-grade aluminum foil for packaging, wrapping, and kitchen applications. Available in various thicknesses and widths.",
     features: ["Food-grade certified", "Various thicknesses", "Multiple widths", "Heat resistant"],

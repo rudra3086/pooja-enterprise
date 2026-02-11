@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { motion } from "framer-motion"
@@ -16,9 +16,9 @@ import { useCart } from "@/lib/cart-context"
 import { useToast } from "@/hooks/use-toast"
 
 const paymentMethods = [
-  { id: "bank", label: "Bank Transfer", description: "Direct bank transfer (NEFT/RTGS)" },
-  { id: "card", label: "Credit/Debit Card", description: "Pay securely with your card" },
+  { id: "bank_transfer", label: "Bank Transfer", description: "Direct bank transfer (NEFT/RTGS)" },
   { id: "upi", label: "UPI", description: "Pay using UPI apps" },
+  { id: "credit_terms", label: "Credit Terms", description: "Business credit (eligible clients only)" },
 ]
 
 export default function CheckoutPage() {
@@ -26,8 +26,9 @@ export default function CheckoutPage() {
   const { toast } = useToast()
   const { items, totalPrice, clearCart } = useCart()
   const [isProcessing, setIsProcessing] = useState(false)
-  const [paymentMethod, setPaymentMethod] = useState("bank")
+  const [paymentMethod, setPaymentMethod] = useState<"bank_transfer" | "upi" | "credit_terms">("bank_transfer")
   const [shippingInfo, setShippingInfo] = useState({
+    name: "Business Name / Contact Person",
     address: "123 Business Park, Industrial Area",
     city: "Mumbai",
     state: "Maharashtra",
@@ -35,6 +36,32 @@ export default function CheckoutPage() {
     phone: "+91 98765 43210",
     notes: "",
   })
+
+  useEffect(() => {
+    // Try to get user info from session to pre-fill
+    const fetchSession = async () => {
+      try {
+        const res = await fetch("/api/auth/session")
+        if (res.ok) {
+          const data = await res.json()
+          if (data.user) {
+            setShippingInfo(prev => ({
+              ...prev,
+              name: data.user.contactPerson || data.user.businessName || prev.name,
+              address: data.user.addressLine1 || prev.address,
+              city: data.user.city || prev.city,
+              state: data.user.state || prev.state,
+              pincode: data.user.postalCode || prev.pincode,
+              phone: data.user.phone || prev.phone,
+            }))
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch session:", err)
+      }
+    }
+    fetchSession()
+  }, [])
 
   const gst = Math.round(totalPrice * 0.18)
   const grandTotal = totalPrice + gst
@@ -66,16 +93,59 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     setIsProcessing(true)
 
-    // Simulate payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    try {
+      const orderData = {
+        shippingName: shippingInfo.name,
+        shippingPhone: shippingInfo.phone,
+        shippingAddressLine1: shippingInfo.address,
+        shippingCity: shippingInfo.city,
+        shippingState: shippingInfo.state,
+        shippingPostalCode: shippingInfo.pincode,
+        paymentMethod: paymentMethod,
+        customerNotes: shippingInfo.notes,
+        items: items.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+          customization: item.customization || undefined,
+        })),
+      }
 
-    toast({
-      title: "Order placed successfully!",
-      description: "Your order has been confirmed. You will receive an email shortly.",
-    })
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+      })
 
-    clearCart()
-    router.push("/dashboard/orders")
+      const result = await response.json()
+
+      if (result.success) {
+        toast({
+          title: "Order placed successfully!",
+          description: "Your order has been confirmed and saved to your account.",
+        })
+        clearCart()
+        router.push("/dashboard/orders")
+      } else {
+        console.error("Order creation failed:", result)
+        toast({
+          title: "Failed to place order",
+          description: result.error || "An error occurred. Please try again.",
+          variant: "destructive",
+        })
+      }
+    } catch (err) {
+      console.error("Place order error:", err)
+      toast({
+        title: "Error",
+        description: err instanceof Error ? err.message : "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   return (
@@ -113,10 +183,20 @@ export default function CheckoutPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Truck className="h-5 w-5" />
-                Shipping Address
+                Shipping Details
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Business / Contact Name</Label>
+                <Input
+                  id="name"
+                  placeholder="Enter your business or personal name"
+                  value={shippingInfo.name}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, name: e.target.value })}
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="address">Street Address</Label>
                 <Textarea
@@ -199,15 +279,22 @@ export default function CheckoutPage() {
                 ))}
               </RadioGroup>
 
-              {paymentMethod === "bank" && (
+              {(paymentMethod === "bank_transfer" || paymentMethod === "upi") && (
                 <div className="mt-4 p-4 rounded-lg bg-muted text-sm">
-                  <p className="font-medium">Bank Details:</p>
-                  <p className="mt-2 text-muted-foreground">
-                    Account Name: Pooja Enterprise<br />
-                    Account Number: 1234567890<br />
-                    IFSC Code: HDFC0001234<br />
-                    Bank: HDFC Bank
-                  </p>
+                  <p className="font-medium">Payment Details:</p>
+                  {paymentMethod === "bank_transfer" ? (
+                    <p className="mt-2 text-muted-foreground">
+                      Account Name: Pooja Enterprise<br />
+                      Account Number: 1234567890<br />
+                      IFSC Code: HDFC0001234<br />
+                      Bank: HDFC Bank
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-muted-foreground">
+                      UPI ID: pooja.enterprise@upi<br />
+                      Merchant Name: Pooja Enterprise
+                    </p>
+                  )}
                 </div>
               )}
             </CardContent>

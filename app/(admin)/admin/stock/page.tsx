@@ -30,7 +30,7 @@ interface Product {
 
 const initialProducts: Product[] = [
   {
-    id: "tissue-napkin",
+    id: "prod-1",
     name: "Tissue Napkin",
     description: "Premium quality napkins for restaurants and hotels",
     stock: 2500,
@@ -39,7 +39,7 @@ const initialProducts: Product[] = [
     unit: "pack of 100",
   },
   {
-    id: "tissue-roll",
+    id: "prod-2",
     name: "Tissue Roll",
     description: "Soft and absorbent tissue rolls for commercial use",
     stock: 180,
@@ -48,7 +48,7 @@ const initialProducts: Product[] = [
     unit: "pack of 6",
   },
   {
-    id: "ultra-soft",
+    id: "prod-3",
     name: "Ultra Soft Tissue Napkin",
     description: "Premium ultra-soft tissues for luxury hospitality",
     stock: 3200,
@@ -57,7 +57,7 @@ const initialProducts: Product[] = [
     unit: "pack of 100",
   },
   {
-    id: "aluminium-foil",
+    id: "prod-4",
     name: "Aluminium Foil",
     description: "Food-grade aluminum foil for packaging and kitchen use",
     stock: 45,
@@ -136,7 +136,7 @@ export default function AdminStockPage() {
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
       >
         <div>
-          <h1 className="font-serif text-3xl font-semibold">Stock Management</h1>
+          <h1 className="font-serif text-3xl font-bold">Stock Management</h1>
           <p className="mt-1 text-muted-foreground">
             Monitor and update product inventory
           </p>
@@ -144,7 +144,7 @@ export default function AdminStockPage() {
         {lowStockCount > 0 && (
           <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-50 border border-amber-200">
             <AlertTriangle className="h-5 w-5 text-amber-600" />
-            <span className="text-sm font-medium text-amber-800">
+            <span className="text-sm font-medium text-amber-900">
               {lowStockCount} product{lowStockCount > 1 ? "s" : ""} low on stock
             </span>
           </div>
@@ -156,16 +156,15 @@ export default function AdminStockPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
+        className="relative"
       >
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search products..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search products..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+        />
       </motion.div>
 
       {/* Stock Grid */}
@@ -235,7 +234,7 @@ export default function AdminStockPage() {
         })}
       </motion.div>
 
-      {/* Edit Modal */}
+      {/* Edit Stock Dialog */}
       <AnimatePresence>
         {editProduct && (
           <Dialog open={!!editProduct} onOpenChange={() => setEditProduct(null)}>

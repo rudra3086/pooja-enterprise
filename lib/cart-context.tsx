@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
 export interface Customization {
   logoFile: string | null
@@ -11,10 +11,12 @@ export interface Customization {
 
 export interface CartItem {
   id: string
+  productId: string
   name: string
   description: string
   price: number
   quantity: number
+  image?: string
   customizable: boolean
   customization?: Customization
 }
@@ -34,6 +36,27 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
+  const [isInitialized, setIsInitialized] = useState(false)
+
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    const savedCart = localStorage.getItem("cart_items")
+    if (savedCart) {
+      try {
+        setItems(JSON.parse(savedCart))
+      } catch (e) {
+        console.error("Failed to parse saved cart", e)
+      }
+    }
+    setIsInitialized(true)
+  }, [])
+
+  // Save cart to localStorage on change
+  useEffect(() => {
+    if (isInitialized) {
+      localStorage.setItem("cart_items", JSON.stringify(items))
+    }
+  }, [items, isInitialized])
 
   const addItem = (newItem: Omit<CartItem, "quantity"> & { quantity?: number }) => {
     setItems((prev) => {

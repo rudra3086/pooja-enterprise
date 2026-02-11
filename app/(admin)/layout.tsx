@@ -3,8 +3,9 @@
 import React from "react"
 
 import Link from "next/link"
+import Image from "next/image"
 import { usePathname, useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   LayoutDashboard,
@@ -42,6 +43,24 @@ export default function AdminLayout({
   const pathname = usePathname()
   const router = useRouter()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [userName, setUserName] = useState("Admin")
+
+  useEffect(() => {
+    const fetchUserSession = async () => {
+      try {
+        const response = await fetch("/api/admin/auth/session")
+        if (response.ok) {
+          const data = await response.json()
+          if (data.user) {
+            setUserName(data.user.name || "Admin")
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch user session:", error)
+      }
+    }
+    fetchUserSession()
+  }, [])
 
   const handleLogout = () => {
     router.push("/login")
@@ -55,7 +74,13 @@ export default function AdminLayout({
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
             <Link href="/admin/dashboard" className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
+              <Image
+                src="/icon.svg"
+                alt="Pooja Enterprise Admin"
+                width={32}
+                height={32}
+                className="h-8 w-8 lg:h-10 lg:w-10"
+              />
               <span className="font-serif text-xl font-semibold">Admin Panel</span>
             </Link>
 
@@ -86,23 +111,24 @@ export default function AdminLayout({
             <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-2 text-primary-foreground hover:bg-primary-foreground/10">
+                  <div className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-md hover:bg-primary-foreground/10 text-sm font-medium text-primary-foreground">
                     <div className="h-8 w-8 rounded-full bg-primary-foreground/20 flex items-center justify-center">
                       <User className="h-4 w-4" />
                     </div>
-                    <span className="hidden sm:inline">Admin</span>
+                    <span className="hidden sm:inline">{userName}</span>
                     <ChevronDown className="h-4 w-4" />
-                  </Button>
+                  </div>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem asChild>
-                    <Link href="/admin/profile" className="flex items-center gap-2 cursor-pointer">
-                      <User className="h-4 w-4" />
-                      Profile
-                    </Link>
+                  <DropdownMenuItem 
+                    onSelect={() => router.push("/admin/profile")}
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <User className="h-4 w-4" />
+                    Profile
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive cursor-pointer">
+                  <DropdownMenuItem onSelect={handleLogout} className="text-destructive cursor-pointer">
                     <LogOut className="h-4 w-4 mr-2" />
                     Logout
                   </DropdownMenuItem>

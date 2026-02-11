@@ -182,6 +182,20 @@ export async function getProducts(options?: {
 
   const rows = await query<RowDataPacket[]>(sql, params)
   
+  // Helper function to safely parse JSON fields
+  const safeJsonParse = (value: any, fieldName: string) => {
+    if (!value) return undefined
+    try {
+      // If it's already an object, return it as-is
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    } catch (e) {
+      console.error(`Failed to parse ${fieldName}:`, value)
+      console.error('Parse error:', e)
+      return undefined
+    }
+  }
+  
   const products: Product[] = rows.map(row => ({
     id: row.id,
     categoryId: row.categoryId,
@@ -192,11 +206,11 @@ export async function getProducts(options?: {
     basePrice: parseFloat(row.basePrice),
     minOrderQuantity: row.minOrderQuantity,
     imageUrl: row.imageUrl,
-    galleryUrls: row.galleryUrls ? JSON.parse(row.galleryUrls) : undefined,
-    features: row.features ? JSON.parse(row.features) : undefined,
-    specifications: row.specifications ? JSON.parse(row.specifications) : undefined,
+    galleryUrls: safeJsonParse(row.galleryUrls, 'galleryUrls'),
+    features: safeJsonParse(row.features, 'features'),
+    specifications: safeJsonParse(row.specifications, 'specifications'),
     isCustomizable: Boolean(row.isCustomizable),
-    customizationOptions: row.customizationOptions ? JSON.parse(row.customizationOptions) : null,
+    customizationOptions: safeJsonParse(row.customizationOptions, 'customizationOptions'),
     isActive: Boolean(row.isActive),
     isFeatured: Boolean(row.isFeatured),
     metaTitle: row.metaTitle,
@@ -225,6 +239,22 @@ export async function getProductById(id: string): Promise<Product | null> {
   )
   if (rows.length === 0) return null
   const row = rows[0]
+  
+  // Helper to safely parse JSON
+  const safeJsonParse = (value: any, fieldName: string) => {
+    if (!value) return undefined
+    try {
+      // If it's already parsed (object/array), return it
+      if (typeof value === 'object') return value
+      // If it's a string, try to parse it
+      return JSON.parse(value)
+    } catch (e) {
+      console.error(`Failed to parse ${fieldName}:`, value)
+      console.error('Parse error:', e)
+      return undefined
+    }
+  }
+  
   return {
     id: row.id,
     categoryId: row.categoryId,
@@ -235,11 +265,11 @@ export async function getProductById(id: string): Promise<Product | null> {
     basePrice: parseFloat(row.basePrice),
     minOrderQuantity: row.minOrderQuantity,
     imageUrl: row.imageUrl,
-    galleryUrls: row.galleryUrls ? JSON.parse(row.galleryUrls) : undefined,
-    features: row.features ? JSON.parse(row.features) : undefined,
-    specifications: row.specifications ? JSON.parse(row.specifications) : undefined,
+    galleryUrls: safeJsonParse(row.galleryUrls, 'galleryUrls'),
+    features: safeJsonParse(row.features, 'features'),
+    specifications: safeJsonParse(row.specifications, 'specifications'),
     isCustomizable: Boolean(row.isCustomizable),
-    customizationOptions: row.customizationOptions ? JSON.parse(row.customizationOptions) : null,
+    customizationOptions: safeJsonParse(row.customizationOptions, 'customizationOptions'),
     isActive: Boolean(row.isActive),
     isFeatured: Boolean(row.isFeatured),
     metaTitle: row.metaTitle,
@@ -266,6 +296,21 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   )
   if (rows.length === 0) return null
   const row = rows[0]
+  
+  // Helper function to safely parse JSON fields
+  const safeJsonParse = (value: any, fieldName: string) => {
+    if (!value) return undefined
+    try {
+      // If it's already an object, return it as-is
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    } catch (e) {
+      console.error(`Failed to parse ${fieldName}:`, value)
+      console.error('Parse error:', e)
+      return undefined
+    }
+  }
+  
   return {
     id: row.id,
     categoryId: row.categoryId,
@@ -276,11 +321,11 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     basePrice: parseFloat(row.basePrice),
     minOrderQuantity: row.minOrderQuantity,
     imageUrl: row.imageUrl,
-    galleryUrls: row.galleryUrls ? JSON.parse(row.galleryUrls) : undefined,
-    features: row.features ? JSON.parse(row.features) : undefined,
-    specifications: row.specifications ? JSON.parse(row.specifications) : undefined,
+    galleryUrls: safeJsonParse(row.galleryUrls, 'galleryUrls'),
+    features: safeJsonParse(row.features, 'features'),
+    specifications: safeJsonParse(row.specifications, 'specifications'),
     isCustomizable: Boolean(row.isCustomizable),
-    customizationOptions: row.customizationOptions ? JSON.parse(row.customizationOptions) : null,
+    customizationOptions: safeJsonParse(row.customizationOptions, 'customizationOptions'),
     isActive: Boolean(row.isActive),
     isFeatured: Boolean(row.isFeatured),
     metaTitle: row.metaTitle,
@@ -628,6 +673,77 @@ export async function updateClientStatus(clientId: string, status: Client["statu
   return result.affectedRows > 0
 }
 
+export async function updateClientProfile(clientId: string, data: {
+  email?: string
+  contactPerson?: string
+  phone?: string
+  businessName?: string
+  gstNumber?: string
+  addressLine1?: string
+  addressLine2?: string
+  city?: string
+  state?: string
+  postalCode?: string
+  country?: string
+}): Promise<boolean> {
+  const fields: string[] = []
+  const values: any[] = []
+
+  if (data.email !== undefined) {
+    fields.push("email = ?")
+    values.push(data.email)
+  }
+  if (data.contactPerson !== undefined) {
+    fields.push("contact_person = ?")
+    values.push(data.contactPerson)
+  }
+  if (data.phone !== undefined) {
+    fields.push("phone = ?")
+    values.push(data.phone)
+  }
+  if (data.businessName !== undefined) {
+    fields.push("business_name = ?")
+    values.push(data.businessName)
+  }
+  if (data.gstNumber !== undefined) {
+    fields.push("gst_number = ?")
+    values.push(data.gstNumber)
+  }
+  if (data.addressLine1 !== undefined) {
+    fields.push("address_line1 = ?")
+    values.push(data.addressLine1)
+  }
+  if (data.addressLine2 !== undefined) {
+    fields.push("address_line2 = ?")
+    values.push(data.addressLine2)
+  }
+  if (data.city !== undefined) {
+    fields.push("city = ?")
+    values.push(data.city)
+  }
+  if (data.state !== undefined) {
+    fields.push("state = ?")
+    values.push(data.state)
+  }
+  if (data.postalCode !== undefined) {
+    fields.push("postal_code = ?")
+    values.push(data.postalCode)
+  }
+  if (data.country !== undefined) {
+    fields.push("country = ?")
+    values.push(data.country)
+  }
+
+  if (fields.length === 0) return false
+
+  values.push(clientId)
+  const result = await execute(
+    `UPDATE clients SET ${fields.join(", ")} WHERE id = ?`,
+    values
+  )
+  return result.affectedRows > 0
+}
+
 // =====================================================
 // ADMIN FUNCTIONS
 // =====================================================
@@ -635,7 +751,7 @@ export async function updateClientStatus(clientId: string, status: Client["statu
 export async function getAdminByEmail(email: string): Promise<(Admin & { passwordHash: string }) | null> {
   const rows = await query<RowDataPacket[]>(
     `SELECT 
-      id, email, password_hash as passwordHash, name, role, avatar_url as avatarUrl,
+      id, email, password_hash as passwordHash, name, phone, role, avatar_url as avatarUrl,
       is_active as isActive, last_login as lastLogin,
       created_at as createdAt, updated_at as updatedAt
     FROM admins 
@@ -649,6 +765,7 @@ export async function getAdminByEmail(email: string): Promise<(Admin & { passwor
     email: row.email,
     passwordHash: row.passwordHash,
     name: row.name,
+    phone: row.phone,
     role: row.role,
     avatarUrl: row.avatarUrl,
     isActive: Boolean(row.isActive),
@@ -661,7 +778,7 @@ export async function getAdminByEmail(email: string): Promise<(Admin & { passwor
 export async function getAdminById(id: string): Promise<Admin | null> {
   const rows = await query<RowDataPacket[]>(
     `SELECT 
-      id, email, name, role, avatar_url as avatarUrl,
+      id, email, name, phone, role, avatar_url as avatarUrl,
       is_active as isActive, last_login as lastLogin,
       created_at as createdAt, updated_at as updatedAt
     FROM admins 
@@ -674,6 +791,7 @@ export async function getAdminById(id: string): Promise<Admin | null> {
     id: row.id,
     email: row.email,
     name: row.name,
+    phone: row.phone,
     role: row.role,
     avatarUrl: row.avatarUrl,
     isActive: Boolean(row.isActive),
@@ -688,6 +806,42 @@ export async function updateAdminLastLogin(adminId: string): Promise<void> {
     "UPDATE admins SET last_login = NOW() WHERE id = ?",
     [adminId]
   )
+}
+
+export async function updateAdminProfile(adminId: string, data: {
+  email?: string
+  name?: string
+  phone?: string
+  avatarUrl?: string
+}): Promise<boolean> {
+  const fields: string[] = []
+  const values: any[] = []
+
+  if (data.email !== undefined) {
+    fields.push("email = ?")
+    values.push(data.email)
+  }
+  if (data.name !== undefined) {
+    fields.push("name = ?")
+    values.push(data.name)
+  }
+  if (data.phone !== undefined) {
+    fields.push("phone = ?")
+    values.push(data.phone)
+  }
+  if (data.avatarUrl !== undefined) {
+    fields.push("avatar_url = ?")
+    values.push(data.avatarUrl)
+  }
+
+  if (fields.length === 0) return false
+
+  values.push(adminId)
+  const result = await execute(
+    `UPDATE admins SET ${fields.join(", ")} WHERE id = ?`,
+    values
+  )
+  return result.affectedRows > 0
 }
 
 // =====================================================
@@ -805,13 +959,27 @@ export async function getCartItems(cartId: string): Promise<CartItem[]> {
     [cartId]
   )
 
+  // Helper function to safely parse JSON fields
+  const safeJsonParse = (value: any, fieldName: string) => {
+    if (!value) return undefined
+    try {
+      // If it's already an object, return it as-is
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    } catch (e) {
+      console.error(`Failed to parse ${fieldName}:`, value)
+      console.error('Parse error:', e)
+      return undefined
+    }
+  }
+
   return rows.map(row => ({
     id: row.id,
     cartId: row.cartId,
     productId: row.productId,
     variantId: row.variantId,
     quantity: row.quantity,
-    customization: row.customization ? JSON.parse(row.customization) : undefined,
+    customization: safeJsonParse(row.customization, 'customization'),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     product: row.p_id ? {
@@ -824,9 +992,9 @@ export async function getCartItems(cartId: string): Promise<CartItem[]> {
       basePrice: parseFloat(row.p_basePrice),
       minOrderQuantity: row.p_minOrderQuantity,
       imageUrl: row.p_imageUrl,
-      features: row.p_features ? JSON.parse(row.p_features) : undefined,
+      features: safeJsonParse(row.p_features, 'features'),
       isCustomizable: Boolean(row.p_isCustomizable),
-      customizationOptions: row.p_customizationOptions ? JSON.parse(row.p_customizationOptions) : null,
+      customizationOptions: safeJsonParse(row.p_customizationOptions, 'customizationOptions'),
       isActive: Boolean(row.p_isActive),
       isFeatured: Boolean(row.p_isFeatured),
     } : undefined,
@@ -852,12 +1020,20 @@ export async function addToCart(
   quantity: number,
   customization?: object
 ): Promise<CartItem> {
+  // Handle customization - check if it's already a string
+  let customizationValue = null
+  if (customization) {
+    customizationValue = typeof customization === 'string' 
+      ? customization 
+      : JSON.stringify(customization)
+  }
+
   // Check if item already exists in cart
   const existing = await query<RowDataPacket[]>(
     `SELECT id, quantity FROM cart_items 
      WHERE cart_id = ? AND product_id = ? AND (variant_id = ? OR (variant_id IS NULL AND ? IS NULL))
      AND (customization = ? OR (customization IS NULL AND ? IS NULL))`,
-    [cartId, productId, variantId, variantId, customization ? JSON.stringify(customization) : null, customization ? JSON.stringify(customization) : null]
+    [cartId, productId, variantId, variantId, customizationValue, customizationValue]
   )
 
   let itemId: string
@@ -874,7 +1050,7 @@ export async function addToCart(
     await execute(
       `INSERT INTO cart_items (id, cart_id, product_id, variant_id, quantity, customization) 
        VALUES (?, ?, ?, ?, ?, ?)`,
-      [itemId, cartId, productId, variantId, quantity, customization ? JSON.stringify(customization) : null]
+      [itemId, cartId, productId, variantId, quantity, customizationValue]
     )
   }
 
@@ -959,6 +1135,12 @@ export async function createOrder(data: {
 
     const orderId = `order-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     
+    console.log('Creating order with data:', {
+      clientId: data.clientId,
+      itemCount: data.items.length,
+      total: data.totalAmount
+    })
+    
     // Create order
     await connection.execute(
       `INSERT INTO orders (
@@ -978,6 +1160,39 @@ export async function createOrder(data: {
     // Create order items and update stock
     for (const item of data.items) {
       const itemId = `oi-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      
+      console.log('Creating order item:', {
+        productId: item.productId,
+        productName: item.productName,
+        hasCustomization: !!item.customization,
+        customizationType: typeof item.customization
+      })
+      
+      // Handle customization - only stringify if it exists and is an object
+      let customizationValue = null
+      if (item.customization !== null && item.customization !== undefined) {
+        console.log('Raw customization:', item.customization)
+        // If it's already a string, don't stringify again
+        if (typeof item.customization === 'string') {
+          try {
+            // Verify it's valid JSON
+            JSON.parse(item.customization)
+            customizationValue = item.customization
+            console.log('Using string customization as-is')
+          } catch (e) {
+            console.log('String is not valid JSON, wrapping it')
+            // If not valid JSON, wrap it
+            customizationValue = JSON.stringify({ value: item.customization })
+          }
+        } else {
+          // It's an object, stringify it
+          customizationValue = JSON.stringify(item.customization)
+          console.log('Stringified object customization:', customizationValue)
+        }
+      }
+      
+      console.log('Final customization for DB:', customizationValue)
+      
       await connection.execute(
         `INSERT INTO order_items (
           id, order_id, product_id, variant_id, product_name, variant_name, sku,
@@ -987,9 +1202,11 @@ export async function createOrder(data: {
           itemId, orderId, item.productId, item.variantId || null,
           item.productName, item.variantName || null, item.sku || null,
           item.quantity, item.unitPrice, item.totalPrice,
-          item.customization ? JSON.stringify(item.customization) : null
+          customizationValue
         ]
       )
+      
+      console.log('Order item created successfully:', itemId)
 
       // Update stock if variant
       if (item.variantId) {
@@ -1001,11 +1218,14 @@ export async function createOrder(data: {
     }
 
     await connection.commit()
+    console.log('Order committed successfully:', orderId)
 
     // Fetch and return the created order
     const order = await getOrderById(orderId)
     return order!
   } catch (error) {
+    console.error('Error creating order:', error)
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error')
     await connection.rollback()
     throw error
   } finally {
@@ -1047,6 +1267,20 @@ export async function getOrderById(id: string): Promise<Order | null> {
     [id]
   )
 
+  // Helper function to safely parse JSON fields
+  const safeJsonParse = (value: any, fieldName: string) => {
+    if (!value) return undefined
+    try {
+      // If it's already an object, return it as-is
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    } catch (e) {
+      console.error(`Failed to parse ${fieldName}:`, value)
+      console.error('Parse error:', e)
+      return undefined
+    }
+  }
+
   const items: OrderItem[] = itemRows.map(item => ({
     id: item.id,
     orderId: item.orderId,
@@ -1058,7 +1292,7 @@ export async function getOrderById(id: string): Promise<Order | null> {
     quantity: item.quantity,
     unitPrice: parseFloat(item.unitPrice),
     totalPrice: parseFloat(item.totalPrice),
-    customization: item.customization ? JSON.parse(item.customization) : undefined,
+    customization: safeJsonParse(item.customization, 'customization'),
     createdAt: item.createdAt,
   }))
 
@@ -1157,6 +1391,58 @@ export async function getOrders(options?: {
 
   const rows = await query<RowDataPacket[]>(sql, params)
   
+  // Helper function to safely parse JSON fields
+  const safeJsonParse = (value: any, fieldName: string) => {
+    if (!value) return undefined
+    try {
+      // If it's already an object, return it as-is
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    } catch (e) {
+      console.error(`Failed to parse ${fieldName}:`, value)
+      console.error('Parse error:', e)
+      return undefined
+    }
+  }
+  
+  // Fetch items for all orders
+  const orderIds = rows.map(row => row.id)
+  let itemsMap: Record<string, OrderItem[]> = {}
+  
+  if (orderIds.length > 0) {
+    const itemRows = await query<RowDataPacket[]>(
+      `SELECT 
+        id, order_id as orderId, product_id as productId, variant_id as variantId,
+        product_name as productName, variant_name as variantName, sku,
+        quantity, unit_price as unitPrice, total_price as totalPrice, customization,
+        created_at as createdAt
+      FROM order_items 
+      WHERE order_id IN (${orderIds.map(() => '?').join(',')})`,
+      orderIds
+    )
+    
+    // Group items by order ID
+    itemRows.forEach(item => {
+      if (!itemsMap[item.orderId]) {
+        itemsMap[item.orderId] = []
+      }
+      itemsMap[item.orderId].push({
+        id: item.id,
+        orderId: item.orderId,
+        productId: item.productId,
+        variantId: item.variantId,
+        productName: item.productName,
+        variantName: item.variantName,
+        sku: item.sku,
+        quantity: item.quantity,
+        unitPrice: parseFloat(item.unitPrice),
+        totalPrice: parseFloat(item.totalPrice),
+        customization: safeJsonParse(item.customization, 'customization'),
+        createdAt: item.createdAt,
+      })
+    })
+  }
+  
   const orders: Order[] = rows.map(row => ({
     id: row.id,
     clientId: row.clientId,
@@ -1184,6 +1470,7 @@ export async function getOrders(options?: {
     deliveredAt: row.deliveredAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    items: itemsMap[row.id] || [],
     client: row.clientBusinessName ? {
       id: row.clientId,
       email: row.clientEmail,
@@ -1262,7 +1549,9 @@ export async function getDashboardStats(): Promise<{
 }> {
   // Total revenue
   const revenueRows = await query<RowDataPacket[]>(
-    "SELECT COALESCE(SUM(total_amount), 0) as total FROM orders WHERE payment_status = 'paid'"
+    `SELECT COALESCE(SUM(total_amount), 0) as total 
+     FROM orders 
+     WHERE status IN ('confirmed', 'processing', 'shipped', 'delivered')`
   )
   const totalRevenue = parseFloat(revenueRows[0].total)
 
@@ -1294,7 +1583,7 @@ export async function getDashboardStats(): Promise<{
   const monthlyRows = await query<RowDataPacket[]>(
     `SELECT 
       DATE_FORMAT(created_at, '%b') as month,
-      COALESCE(SUM(CASE WHEN payment_status = 'paid' THEN total_amount ELSE 0 END), 0) as revenue
+      COALESCE(SUM(CASE WHEN status IN ('confirmed', 'processing', 'shipped', 'delivered') THEN total_amount ELSE 0 END), 0) as revenue
     FROM orders
     WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
     GROUP BY YEAR(created_at), MONTH(created_at), DATE_FORMAT(created_at, '%b')

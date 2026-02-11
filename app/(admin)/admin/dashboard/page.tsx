@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import {
@@ -10,88 +11,20 @@ import {
   ArrowRight,
   TrendingUp,
   AlertTriangle,
+  Users,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-
-const stats = [
-  {
-    title: "Total Revenue",
-    value: "₹12,45,000",
-    icon: DollarSign,
-    description: "This month",
-    trend: "+23%",
-    trendUp: true,
-  },
-  {
-    title: "Pending Orders",
-    value: "8",
-    icon: Clock,
-    description: "Awaiting processing",
-    trend: null,
-    trendUp: null,
-  },
-  {
-    title: "Completed Orders",
-    value: "156",
-    icon: CheckCircle,
-    description: "This month",
-    trend: "+12%",
-    trendUp: true,
-  },
-  {
-    title: "Low Stock Items",
-    value: "3",
-    icon: AlertTriangle,
-    description: "Need restocking",
-    trend: null,
-    trendUp: null,
-  },
-]
-
-const recentOrders = [
-  {
-    id: "ORD-2024-003",
-    customer: "ABC Enterprises",
-    date: "2024-01-22",
-    total: "₹11,000",
-    status: "Pending",
-  },
-  {
-    id: "ORD-2024-002",
-    customer: "XYZ Hotels",
-    date: "2024-01-18",
-    total: "₹35,000",
-    status: "Active",
-  },
-  {
-    id: "ORD-2024-001",
-    customer: "Royal Restaurant",
-    date: "2024-01-15",
-    total: "₹21,500",
-    status: "Completed",
-  },
-  {
-    id: "ORD-2024-004",
-    customer: "Grand Hotel",
-    date: "2024-01-25",
-    total: "₹22,500",
-    status: "Active",
-  },
-]
-
-const stockOverview = [
-  { name: "Tissue Napkin", stock: 2500, status: "good" },
-  { name: "Tissue Roll", stock: 180, status: "low" },
-  { name: "Ultra Soft Tissue", stock: 3200, status: "good" },
-  { name: "Aluminium Foil", stock: 45, status: "critical" },
-]
+import { Skeleton } from "@/components/ui/skeleton"
 
 const statusColors = {
-  Pending: "bg-yellow-100 text-yellow-800",
-  Active: "bg-blue-100 text-blue-800",
-  Completed: "bg-green-100 text-green-800",
+  pending: "bg-yellow-100 text-yellow-800",
+  confirmed: "bg-blue-100 text-blue-800",
+  processing: "bg-purple-100 text-purple-800",
+  shipped: "bg-indigo-100 text-indigo-800",
+  delivered: "bg-green-100 text-green-800",
+  cancelled: "bg-red-100 text-red-800",
 }
 
 const containerVariants = {
@@ -109,11 +42,68 @@ const itemVariants = {
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: "easeOut" },
+    transition: { duration: 0.4 },
   },
 }
 
 export default function AdminDashboardPage() {
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState<any>(null)
+  const [recentOrders, setRecentOrders] = useState<any[]>([])
+  const [lowStockItems, setLowStockItems] = useState<any[]>([])
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch stats and recent orders
+        const statsResponse = await fetch("/api/admin/stats")
+        if (statsResponse.ok) {
+          const data = await statsResponse.json()
+          if (data.success && data.data) {
+            setStats(data.data)
+            setRecentOrders(data.data.recentOrders || [])
+          }
+        }
+
+        // Fetch low stock items
+        const stockResponse = await fetch("/api/admin/stock?lowStock=true&pageSize=4")
+        if (stockResponse.ok) {
+          const data = await stockResponse.json()
+          if (data.success && data.data) {
+            setLowStockItems(data.data.data || [])
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(amount)
+  }
+
+  const formatDate = (date: string | Date) => {
+    return new Date(date).toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    })
+  }
+
+  const getStockStatus = (quantity: number, threshold: number) => {
+    if (quantity === 0) return { label: "Out of Stock", color: "bg-red-100 text-red-800" }
+    if (quantity <= threshold) return { label: "Low Stock", color: "bg-amber-100 text-amber-800" }
+    return { label: "In Stock", color: "bg-green-100 text-green-800" }
+  }
   return (
     <div className="space-y-8">
       {/* Welcome Section */}
@@ -135,30 +125,98 @@ export default function AdminDashboardPage() {
         animate="visible"
         className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
       >
-        {stats.map((stat) => (
-          <motion.div key={stat.title} variants={itemVariants}>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {stat.title}
-                </CardTitle>
-                <stat.icon className={`h-5 w-5 ${stat.title === "Low Stock Items" ? "text-amber-500" : "text-muted-foreground"}`} />
+        {loading ? (
+          // Loading skeletons
+          Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader>
+                <Skeleton className="h-4 w-24" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-semibold">{stat.value}</div>
-                <div className="flex items-center justify-between mt-1">
-                  <p className="text-xs text-muted-foreground">{stat.description}</p>
-                  {stat.trend && (
-                    <span className={`text-xs font-medium flex items-center gap-1 ${stat.trendUp ? "text-green-600" : "text-red-600"}`}>
-                      <TrendingUp className="h-3 w-3" />
-                      {stat.trend}
-                    </span>
-                  )}
-                </div>
+                <Skeleton className="h-8 w-32 mb-2" />
+                <Skeleton className="h-3 w-20" />
               </CardContent>
             </Card>
-          </motion.div>
-        ))}
+          ))
+        ) : (
+          <>
+            <motion.div variants={itemVariants}>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Total Revenue
+                  </CardTitle>
+                  <DollarSign className="h-5 w-5 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-semibold">
+                    {stats ? formatCurrency(stats.totalRevenue) : "₹0"}
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-muted-foreground">From paid orders</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Pending Orders
+                  </CardTitle>
+                  <Clock className="h-5 w-5 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-semibold">
+                    {stats ? stats.pendingOrders : "0"}
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-muted-foreground">Awaiting processing</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Total Orders
+                  </CardTitle>
+                  <CheckCircle className="h-5 w-5 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-semibold">
+                    {stats ? stats.totalOrders : "0"}
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-muted-foreground">All time</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div variants={itemVariants}>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                    Low Stock Items
+                  </CardTitle>
+                  <AlertTriangle className="h-5 w-5 text-amber-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-semibold">
+                    {stats ? stats.lowStockItems : "0"}
+                  </div>
+                  <div className="flex items-center justify-between mt-1">
+                    <p className="text-xs text-muted-foreground">Need restocking</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </>
+        )}
       </motion.div>
 
       <div className="grid gap-8 lg:grid-cols-2">
@@ -179,30 +237,47 @@ export default function AdminDashboardPage() {
               </Link>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {recentOrders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border"
-                  >
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{order.id}</span>
-                        <Badge className={statusColors[order.status as keyof typeof statusColors]}>
-                          {order.status}
-                        </Badge>
+              {loading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="p-3 rounded-lg border">
+                      <Skeleton className="h-4 w-32 mb-2" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                  ))}
+                </div>
+              ) : recentOrders.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No orders yet
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {recentOrders.slice(0, 5).map((order) => (
+                    <div
+                      key={order.id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-border"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{order.orderNumber}</span>
+                          <Badge className={statusColors[order.status as keyof typeof statusColors]}>
+                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          {order.client?.businessName || order.clientBusinessName || "Unknown"}
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground">{order.customer}</p>
+                      <div className="text-right">
+                        <div className="font-semibold">{formatCurrency(order.totalAmount)}</div>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(order.createdAt)}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-semibold">{order.total}</div>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(order.date).toLocaleDateString("en-IN")}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -215,7 +290,7 @@ export default function AdminDashboardPage() {
         >
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle className="font-serif text-xl">Stock Overview</CardTitle>
+              <CardTitle className="font-serif text-xl">Low Stock Items</CardTitle>
               <Link href="/admin/stock">
                 <Button variant="ghost" size="sm" className="gap-1 group">
                   Manage Stock
@@ -224,36 +299,48 @@ export default function AdminDashboardPage() {
               </Link>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {stockOverview.map((item) => (
-                  <div
-                    key={item.name}
-                    className="flex items-center justify-between p-3 rounded-lg border border-border"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
-                        <Package className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <span className="font-medium">{item.name}</span>
+              {loading ? (
+                <div className="space-y-4">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="p-3 rounded-lg border">
+                      <Skeleton className="h-4 w-40 mb-2" />
+                      <Skeleton className="h-3 w-24" />
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground">{item.stock} units</span>
-                      <Badge
-                        variant={item.status === "good" ? "default" : "destructive"}
-                        className={
-                          item.status === "good"
-                            ? "bg-green-100 text-green-800 hover:bg-green-100"
-                            : item.status === "low"
-                              ? "bg-amber-100 text-amber-800 hover:bg-amber-100"
-                              : "bg-red-100 text-red-800 hover:bg-red-100"
-                        }
+                  ))}
+                </div>
+              ) : lowStockItems.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  All items are well stocked! ✓
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {lowStockItems.map((item) => {
+                    const status = getStockStatus(item.stockQuantity, item.lowStockThreshold || 10)
+                    return (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between p-3 rounded-lg border border-border"
                       >
-                        {item.status === "good" ? "Good" : item.status === "low" ? "Low" : "Critical"}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded bg-muted flex items-center justify-center">
+                            <Package className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <div className="font-medium">{item.name}</div>
+                            <div className="text-xs text-muted-foreground">SKU: {item.sku}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">{item.stockQuantity} units</span>
+                          <Badge className={status.color}>
+                            {status.label}
+                          </Badge>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         </motion.div>

@@ -56,6 +56,7 @@ CREATE TABLE admins (
     email VARCHAR(255) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
+    phone VARCHAR(20),
     role ENUM('super_admin', 'admin', 'manager') DEFAULT 'admin',
     avatar_url VARCHAR(500),
     
@@ -320,9 +321,9 @@ CREATE TABLE order_items (
 -- =====================================================
 
 -- Insert default admin (password: admin123)
--- Password hash generated with bcrypt: bcrypt.hashSync('admin123', 10)
+-- Password hash generated with bcryptjs (compatible with login system): bcryptjs.hashSync('admin123', 10)
 INSERT INTO admins (id, email, password_hash, name, role) VALUES
-('admin-1', 'admin@poojaenterprise.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZRGdjGj/n3Ee0bH1UjG7E5y.2R4G2', 'Admin User', 'super_admin');
+('admin-1', 'admin@poojaenterprise.com', '$2b$10$Nepj4NTP2hmNLBYLPeHDGOTw5DhyZtvsbVV3pbYx6MNHlY0vCnG0G', 'Admin User', 'super_admin');
 
 -- Insert categories
 INSERT INTO categories (id, name, slug, description, sort_order) VALUES

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { User, Building2, Mail, Phone, MapPin, Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -14,23 +14,102 @@ import { useToast } from "@/hooks/use-toast"
 export default function ProfilePage() {
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingData, setIsLoadingData] = useState(true)
   const [profile, setProfile] = useState({
-    name: "John Doe",
-    email: "john@company.com",
-    phone: "+91 98765 43210",
-    companyName: "ABC Enterprises",
-    gstNumber: "22AAAAA0000A1Z5",
-    address: "123 Business Park, Industrial Area, Mumbai - 400001",
+    name: "",
+    email: "",
+    phone: "",
+    companyName: "",
+    gstNumber: "",
+    address: "",
   })
+
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const response = await fetch("/api/auth/session")
+        if (response.ok) {
+          const data = await response.json()
+          if (data.user) {
+            const user = data.user
+            // Map database fields to profile fields
+            const fullAddress = [
+              user.addressLine1,
+              user.addressLine2,
+              user.city,
+              user.state,
+              user.postalCode,
+              user.country,
+            ]
+              .filter(Boolean)
+              .join(", ")
+
+            setProfile({
+              name: user.contactPerson || "",
+              email: user.email || "",
+              phone: user.phone || "",
+              companyName: user.businessName || "",
+              gstNumber: user.gstNumber || "",
+              address: fullAddress || "",
+            })
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch user profile:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load profile data",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoadingData(false)
+      }
+    }
+
+    fetchUserProfile()
+  }, [])
 
   const handleSave = async () => {
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    toast({
-      title: "Profile updated",
-      description: "Your profile has been saved successfully.",
-    })
-    setIsLoading(false)
+    try {
+      const response = await fetch("/api/dashboard/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: profile.email,
+          contactPerson: profile.name,
+          phone: profile.phone,
+          businessName: profile.companyName,
+          gstNumber: profile.gstNumber,
+          addressLine1: profile.address, // For simplicity, storing full address in addressLine1
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        toast({
+          title: "Profile updated",
+          description: "Your profile has been saved successfully.",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update profile",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error saving profile:", error)
+      toast({
+        title: "Error",
+        description: "An error occurred while saving",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -46,12 +125,17 @@ export default function ProfilePage() {
         </p>
       </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: 0.1 }}
-        className="grid gap-6 lg:grid-cols-3"
-      >
+      {isLoadingData ? (
+        <div className="flex items-center justify-center py-12">
+          <p className="text-muted-foreground">Loading your profile...</p>
+        </div>
+      ) : (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="grid gap-6 lg:grid-cols-3"
+        >
         {/* Profile Card */}
         <Card className="lg:col-span-1">
           <CardContent className="pt-6">
@@ -163,7 +247,8 @@ export default function ProfilePage() {
             </div>
           </CardContent>
         </Card>
-      </motion.div>
+        </motion.div>
+      )}
     </div>
   )
 }

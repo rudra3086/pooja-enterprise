@@ -287,7 +287,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <div className="font-semibold">₹{order.total.toLocaleString("en-IN")}</div>
-                      <Link href={`/dashboard/orders/${order.id}`}>
+                      <Link href="/dashboard/orders">
                         <Button variant="ghost" size="sm" className="mt-1">
                           View Details
                         </Button>
