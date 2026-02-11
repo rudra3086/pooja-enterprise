@@ -222,6 +222,48 @@ export async function getProducts(options?: {
   return { products, total }
 }
 
+export async function getAllProductsForAdmin(): Promise<Product[]> {
+  const rows = await query<RowDataPacket[]>(
+    `SELECT 
+      id, category_id as categoryId, name, slug, description, 
+      short_description as shortDescription, base_price as basePrice, 
+      min_order_quantity as minOrderQuantity, image_url as imageUrl, 
+      is_customizable as isCustomizable, customization_options as customizationOptions,
+      is_active as isActive, is_featured as isFeatured,
+      created_at as createdAt, updated_at as updatedAt
+    FROM products 
+    ORDER BY name ASC`
+  )
+  
+  const safeJsonParse = (value: any) => {
+    if (!value) return undefined
+    try {
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    } catch (e) {
+      return undefined
+    }
+  }
+  
+  return rows.map(row => ({
+    id: row.id,
+    categoryId: row.categoryId,
+    name: row.name,
+    slug: row.slug,
+    description: row.description,
+    shortDescription: row.shortDescription,
+    basePrice: parseFloat(row.basePrice),
+    minOrderQuantity: row.minOrderQuantity,
+    imageUrl: row.imageUrl,
+    isCustomizable: Boolean(row.isCustomizable),
+    customizationOptions: safeJsonParse(row.customizationOptions),
+    isActive: Boolean(row.isActive),
+    isFeatured: Boolean(row.isFeatured),
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }))
+}
+
 export async function getProductById(id: string): Promise<Product | null> {
   const rows = await query<RowDataPacket[]>(
     `SELECT 
@@ -440,7 +482,7 @@ export async function getAllVariants(options?: {
       pv.ply, pv.thickness, pv.width, pv.price, pv.stock_quantity as stockQuantity, 
       pv.low_stock_threshold as lowStockThreshold, pv.is_active as isActive,
       pv.created_at as createdAt, pv.updated_at as updatedAt,
-      p.name as productName, p.category_id as categoryId
+      p.name as productName, p.category_id as categoryId, p.image_url as imageUrl
     FROM product_variants pv
     LEFT JOIN products p ON pv.product_id = p.id
     ${whereClause}
@@ -474,6 +516,7 @@ export async function getAllVariants(options?: {
     updatedAt: row.updatedAt,
     productName: row.productName,
     categoryId: row.categoryId,
+    imageUrl: row.imageUrl,
   }))
 
   return { variants, total }
@@ -497,6 +540,102 @@ export async function updateVariantStock(
       break
   }
   const result = await execute(sql, [quantity, variantId])
+  return result.affectedRows > 0
+}
+
+export async function updateVariantDetails(
+  variantId: string,
+  updates: {
+    price?: number
+    lowStockThreshold?: number
+  }
+): Promise<boolean> {
+  const fields: string[] = []
+  const values: any[] = []
+
+  if (updates.price !== undefined) {
+    fields.push("price = ?")
+    values.push(updates.price)
+  }
+
+  if (updates.lowStockThreshold !== undefined) {
+    fields.push("low_stock_threshold = ?")
+    values.push(updates.lowStockThreshold)
+  }
+
+  if (fields.length === 0) return true
+
+  values.push(variantId)
+  const sql = `UPDATE product_variants SET ${fields.join(", ")} WHERE id = ?`
+  const result = await execute(sql, values)
+  return result.affectedRows > 0
+}
+
+export async function updateProduct(
+  productId: string,
+  updates: {
+    name?: string
+    description?: string
+    shortDescription?: string
+    basePrice?: number
+    minOrderQuantity?: number
+    imageUrl?: string
+    isActive?: boolean
+    isFeatured?: boolean
+    isCustomizable?: boolean
+    customizationOptions?: any
+  }
+): Promise<boolean> {
+  const fields: string[] = []
+  const values: any[] = []
+
+  if (updates.name !== undefined) {
+    fields.push("name = ?")
+    values.push(updates.name)
+  }
+  if (updates.description !== undefined) {
+    fields.push("description = ?")
+    values.push(updates.description)
+  }
+  if (updates.shortDescription !== undefined) {
+    fields.push("short_description = ?")
+    values.push(updates.shortDescription)
+  }
+  if (updates.basePrice !== undefined) {
+    fields.push("base_price = ?")
+    values.push(updates.basePrice)
+  }
+  if (updates.minOrderQuantity !== undefined) {
+    fields.push("min_order_quantity = ?")
+    values.push(updates.minOrderQuantity)
+  }
+  if (updates.imageUrl !== undefined) {
+    fields.push("image_url = ?")
+    values.push(updates.imageUrl)
+  }
+  if (updates.isActive !== undefined) {
+    fields.push("is_active = ?")
+    values.push(updates.isActive)
+  }
+  if (updates.isFeatured !== undefined) {
+    fields.push("is_featured = ?")
+    values.push(updates.isFeatured)
+  }
+  if (updates.isCustomizable !== undefined) {
+    fields.push("is_customizable = ?")
+    values.push(updates.isCustomizable)
+  }
+  if (updates.customizationOptions !== undefined) {
+    fields.push("customization_options = ?")
+    values.push(JSON.stringify(updates.customizationOptions))
+  }
+
+  if (fields.length === 0) return true
+
+  fields.push("updated_at = NOW()")
+  values.push(productId)
+  const sql = `UPDATE products SET ${fields.join(", ")} WHERE id = ?`
+  const result = await execute(sql, values)
   return result.affectedRows > 0
 }
 

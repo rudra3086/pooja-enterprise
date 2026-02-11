@@ -25,7 +25,7 @@ const products = [
     description: "Soft and absorbent tissue rolls designed for commercial and industrial use. High sheet count per roll for cost efficiency.",
     features: ["High absorbency", "Soft texture", "Large sheet count", "Eco-friendly options"],
     image: "/images/tissue-rolls.jpg",
-    customizable: true,
+    customizable: false,
   },
   {
     id: "prod-3",
@@ -33,7 +33,7 @@ const products = [
     description: "Premium ultra-soft tissues for luxury hospitality experiences. Ideal for fine dining and high-end establishments.",
     features: ["Extra soft texture", "Premium quality", "Elegant presentation", "Custom branding"],
     image: "/images/facial-tissue.jpg",
-    customizable: true,
+    customizable: false,
   },
   {
     id: "prod-4",

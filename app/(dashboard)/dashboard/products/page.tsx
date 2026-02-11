@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import Link from "next/link"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { Package, Minus, Plus, ShoppingCart, Palette, Upload, X } from "lucide-react"
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Dialog,
   DialogContent,
@@ -21,60 +23,21 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { useCart, type Customization } from "@/lib/cart-context"
 
-const products = [
-  {
-    id: "prod-1",
-    name: "Tissue Napkin",
-    description: "Premium quality napkins for restaurants and hotels. Available in 1-ply and 2-ply options.",
-    price: 25,
-    unit: "pack of 100",
-    customizable: true,
-    inStock: true,
-    image: "/images/tissue-napkins.jpg",
-  },
-  {
-    id: "prod-2",
-    name: "Tissue Roll",
-    description: "Soft and absorbent tissue rolls designed for commercial and industrial use.",
-    price: 45,
-    unit: "pack of 6",
-    customizable: false,
-    inStock: true,
-    image: "/images/tissue-rolls.jpg",
-  },
-  {
-    id: "prod-3",
-    name: "Ultra Soft Tissue Napkin",
-    description: "Premium ultra-soft tissues for luxury hospitality experiences.",
-    price: 35,
-    unit: "pack of 100",
-    customizable: false,
-    inStock: true,
-    image: "/images/facial-tissue.jpg",
-  },
-  {
-    id: "prod-4",
-    name: "Aluminium Foil",
-    description: "Food-grade aluminum foil for packaging, wrapping, and kitchen applications.",
-    price: 120,
-    unit: "roll (72m)",
-    customizable: false,
-    inStock: true,
-    image: "/images/aluminum-foil.jpg",
-  },
-]
-
-const logoSizes = [
-  { value: "small", label: "Small (2cm)", price: 50 },
-  { value: "medium", label: "Medium (4cm)", price: 100 },
-  { value: "large", label: "Large (6cm)", price: 150 },
-]
-
-const logoPositions = [
-  { value: "center", label: "Center", price: 0 },
-  { value: "corner", label: "Corner", price: 25 },
-  { value: "repeated", label: "Repeated Pattern", price: 75 },
-]
+interface Product {
+  id: string
+  name: string
+  description: string
+  shortDescription: string
+  basePrice: number
+  minOrderQuantity: number
+  imageUrl?: string
+  isCustomizable: boolean
+  customizationOptions?: {
+    logoSizes?: { value: string; label: string; price: number }[]
+    logoPositions?: { value: string; label: string; price: number }[]
+  }
+  isActive: boolean
+}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -98,10 +61,10 @@ const itemVariants = {
 export default function DashboardProductsPage() {
   const { toast } = useToast()
   const { addItem, totalItems } = useCart()
-  const [quantities, setQuantities] = useState<Record<string, number>>(
-    Object.fromEntries(products.map((p) => [p.id, 1]))
-  )
-  const [customizeProduct, setCustomizeProduct] = useState<typeof products[0] | null>(null)
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [quantities, setQuantities] = useState<Record<string, number>>({})
+  const [customizeProduct, setCustomizeProduct] = useState<Product | null>(null)
   const [customization, setCustomization] = useState<{
     logoFile: string | null
     logoSize: "small" | "medium" | "large"
@@ -112,6 +75,45 @@ export default function DashboardProductsPage() {
     logoPosition: "center",
   })
 
+  useEffect(() => {
+    fetchProducts()
+  }, [])
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch("/api/products?pageSize=100")
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.data.data) {
+          const productData = result.data.data.filter((p: Product) => p.isActive)
+          setProducts(productData)
+          // Initialize quantities
+          const initialQuantities: Record<string, number> = {}
+          productData.forEach((p: Product) => {
+            initialQuantities[p.id] = 1
+          })
+          setQuantities(initialQuantities)
+        }
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to load products",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load products",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const updateQuantity = (id: string, delta: number) => {
     setQuantities((prev) => ({
       ...prev,
@@ -119,16 +121,16 @@ export default function DashboardProductsPage() {
     }))
   }
 
-  const handleAddToCart = (product: typeof products[0]) => {
+  const handleAddToCart = (product: Product) => {
     addItem({
       id: product.id,
       productId: product.id,
       name: product.name,
       description: product.description,
-      price: product.price,
-      image: product.image,
+      price: product.basePrice,
+      image: product.imageUrl,
       quantity: quantities[product.id],
-      customizable: product.customizable,
+      customizable: product.isCustomizable,
     })
     toast({
       title: "Added to cart",
@@ -138,6 +140,23 @@ export default function DashboardProductsPage() {
   }
 
   const calculateCustomizationCost = () => {
+    if (!customizeProduct?.customizationOptions) return 0
+    
+    // Default values if not set
+    const defaultLogoSizes = [
+      { value: "small", label: "Small (2cm)", price: 50 },
+      { value: "medium", label: "Medium (4cm)", price: 100 },
+      { value: "large", label: "Large (6cm)", price: 150 },
+    ]
+    const defaultLogoPositions = [
+      { value: "center", label: "Center", price: 0 },
+      { value: "corner", label: "Corner", price: 25 },
+      { value: "repeated", label: "Repeated Pattern", price: 75 },
+    ]
+    
+    const logoSizes = customizeProduct.customizationOptions.logoSizes || defaultLogoSizes
+    const logoPositions = customizeProduct.customizationOptions.logoPositions || defaultLogoPositions
+    
     const sizeCost = logoSizes.find((s) => s.value === customization.logoSize)?.price || 0
     const positionCost = logoPositions.find((p) => p.value === customization.logoPosition)?.price || 0
     return sizeCost + positionCost
@@ -156,8 +175,8 @@ export default function DashboardProductsPage() {
       productId: customizeProduct.id,
       name: `${customizeProduct.name} (Customized)`,
       description: customizeProduct.description,
-      price: customizeProduct.price,
-      image: customizeProduct.image,
+      price: customizeProduct.basePrice,
+      image: customizeProduct.imageUrl,
       quantity: quantities[customizeProduct.id],
       customizable: true,
       customization: customizationData,
@@ -188,13 +207,35 @@ export default function DashboardProductsPage() {
             Browse and order from our product catalog
           </p>
         </div>
-        <Button variant="outline" className="gap-2 bg-transparent">
-          <ShoppingCart className="h-4 w-4" />
-          Cart ({totalItems})
-        </Button>
+        <Link href="/dashboard/cart">
+          <Button variant="outline" className="gap-2 bg-transparent">
+            <ShoppingCart className="h-4 w-4" />
+            Cart ({totalItems})
+          </Button>
+        </Link>
       </motion.div>
 
       {/* Products Grid */}
+      {loading ? (
+        <div className="grid gap-6 md:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i} className="overflow-hidden h-full p-0">
+              <div className="flex flex-col sm:flex-row h-full">
+                <div className="sm:w-1/3 min-h-[250px] sm:min-h-full bg-muted">
+                  <Skeleton className="h-full w-full" />
+                </div>
+                <CardContent className="flex-1 p-6">
+                  <Skeleton className="h-6 w-48" />
+                  <Skeleton className="mt-2 h-4 w-full" />
+                  <Skeleton className="mt-4 h-8 w-24" />
+                  <Skeleton className="mt-4 h-8 w-32" />
+                  <Skeleton className="mt-4 h-10 w-full" />
+                </CardContent>
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -208,12 +249,12 @@ export default function DashboardProductsPage() {
                 {/* Product Image */}
                 <div className="sm:w-1/3 min-h-[250px] sm:min-h-full bg-muted relative overflow-hidden shrink-0">
                   <Image
-                    src={product.image || "/placeholder.svg"}
+                    src={product.imageUrl || "/placeholder.svg"}
                     alt={product.name}
                     fill
                     className="object-cover"
                   />
-                  {product.customizable && (
+                  {product.isCustomizable && (
                     <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground">
                       Customizable
                     </Badge>
@@ -226,8 +267,8 @@ export default function DashboardProductsPage() {
                   <p className="mt-1 text-sm text-muted-foreground">{product.description}</p>
 
                   <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-2xl font-semibold">₹{product.price}</span>
-                    <span className="text-sm text-muted-foreground">/ {product.unit}</span>
+                    <span className="text-2xl font-semibold">₹{product.basePrice.toFixed(2)}</span>
+                    <span className="text-sm text-muted-foreground">/ pack of {product.minOrderQuantity}</span>
                   </div>
 
                   {/* Quantity Selector */}
@@ -270,7 +311,7 @@ export default function DashboardProductsPage() {
                       <ShoppingCart className="h-4 w-4" />
                       Add to Cart
                     </Button>
-                    {product.customizable && (
+                    {product.isCustomizable && (
                       <Button
                         variant="outline"
                         onClick={() => setCustomizeProduct(product)}
@@ -287,10 +328,27 @@ export default function DashboardProductsPage() {
           </motion.div>
         ))}
       </motion.div>
+      )}
 
       {/* Customization Modal */}
       <AnimatePresence>
-        {customizeProduct && (
+        {customizeProduct && (() => {
+          // Default values if not set in database
+          const defaultLogoSizes = [
+            { value: "small", label: "Small (2cm)", price: 50 },
+            { value: "medium", label: "Medium (4cm)", price: 100 },
+            { value: "large", label: "Large (6cm)", price: 150 },
+          ]
+          const defaultLogoPositions = [
+            { value: "center", label: "Center", price: 0 },
+            { value: "corner", label: "Corner", price: 25 },
+            { value: "repeated", label: "Repeated Pattern", price: 75 },
+          ]
+          
+          const logoSizes = customizeProduct.customizationOptions?.logoSizes || defaultLogoSizes
+          const logoPositions = customizeProduct.customizationOptions?.logoPositions || defaultLogoPositions
+          
+          return (
           <Dialog open={!!customizeProduct} onOpenChange={() => setCustomizeProduct(null)}>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
@@ -408,7 +466,7 @@ export default function DashboardProductsPage() {
                 <div className="rounded-lg bg-muted p-4 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span>Base Price ({quantities[customizeProduct.id]} units)</span>
-                    <span>₹{customizeProduct.price * quantities[customizeProduct.id]}</span>
+                    <span>₹{(customizeProduct.basePrice * quantities[customizeProduct.id]).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Customization Cost (per unit)</span>
@@ -418,8 +476,8 @@ export default function DashboardProductsPage() {
                     <span>Total</span>
                     <span>
                       ₹
-                      {(customizeProduct.price + calculateCustomizationCost()) *
-                        quantities[customizeProduct.id]}
+                      {((customizeProduct.basePrice + calculateCustomizationCost()) *
+                        quantities[customizeProduct.id]).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -436,7 +494,8 @@ export default function DashboardProductsPage() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        )}
+          )
+        })()}
       </AnimatePresence>
     </div>
   )

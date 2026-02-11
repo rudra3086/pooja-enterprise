@@ -17,6 +17,7 @@ import {
   X,
   ChevronDown,
   Shield,
+  ShoppingBag,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -32,6 +33,7 @@ import { Toaster } from "@/components/ui/toaster"
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/orders", label: "Orders", icon: ClipboardList },
+  { href: "/admin/products", label: "Products", icon: ShoppingBag },
   { href: "/admin/stock", label: "Stock", icon: Package },
 ]
 

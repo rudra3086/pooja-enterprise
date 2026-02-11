@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getSessionByToken, getAllVariants, updateVariantStock } from "@/lib/db"
+import { getSessionByToken, getAllVariants, updateVariantStock, updateVariantDetails } from "@/lib/db"
 import type { ApiResponse, ProductVariant, PaginatedResponse, UpdateStockRequest } from "@/lib/types"
 
 interface StockItem extends ProductVariant {
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// PATCH /api/admin/stock - Update stock quantity (admin)
+// PATCH /api/admin/stock - Update stock quantity and variant details (admin)
 export async function PATCH(request: NextRequest) {
   try {
     if (!await isAdminAuthenticated(request)) {
@@ -71,40 +71,56 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const body: UpdateStockRequest = await request.json()
-    const { variantId, quantity, operation } = body
+    const body = await request.json()
+    const { variantId, quantity, operation, price, lowStockThreshold } = body
 
-    if (!variantId || quantity === undefined || !operation) {
+    if (!variantId) {
       return NextResponse.json<ApiResponse>(
-        { success: false, error: "variantId, quantity, and operation are required" },
+        { success: false, error: "variantId is required" },
         { status: 400 }
       )
     }
 
-    if (!["set", "add", "subtract"].includes(operation)) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: "Invalid operation" },
-        { status: 400 }
-      )
+    // Update stock quantity if provided
+    if (quantity !== undefined && operation) {
+      if (!["set", "add", "subtract"].includes(operation)) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: "Invalid operation" },
+          { status: 400 }
+        )
+      }
+
+      const stockSuccess = await updateVariantStock(variantId, quantity, operation)
+      if (!stockSuccess) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: "Variant not found" },
+          { status: 404 }
+        )
+      }
     }
 
-    const success = await updateVariantStock(variantId, quantity, operation)
-
-    if (!success) {
-      return NextResponse.json<ApiResponse>(
-        { success: false, error: "Variant not found" },
-        { status: 404 }
-      )
+    // Update price and/or low stock threshold if provided
+    if (price !== undefined || lowStockThreshold !== undefined) {
+      const detailsSuccess = await updateVariantDetails(variantId, {
+        price,
+        lowStockThreshold,
+      })
+      if (!detailsSuccess) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: "Failed to update variant details" },
+          { status: 404 }
+        )
+      }
     }
 
     return NextResponse.json<ApiResponse>({
       success: true,
-      message: "Stock updated successfully",
+      message: "Variant updated successfully",
     })
   } catch (error) {
     console.error("Admin update stock error:", error)
     return NextResponse.json<ApiResponse>(
-      { success: false, error: "Failed to update stock" },
+      { success: false, error: "Failed to update variant" },
       { status: 500 }
     )
   }
