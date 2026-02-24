@@ -64,7 +64,8 @@ export default function CheckoutPage() {
   }, [])
 
   const gst = Math.round(totalPrice * 0.18)
-  const grandTotal = totalPrice + gst
+  const shippingAmount = totalPrice > 10000 ? 0 : 500
+  const grandTotal = totalPrice + gst + shippingAmount
 
   if (items.length === 0) {
     return (
@@ -338,7 +339,9 @@ export default function CheckoutPage() {
 
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Shipping</span>
-                <span className="text-green-600">Free</span>
+                <span className={shippingAmount === 0 ? "text-green-600" : "text-foreground"}>
+                  {shippingAmount === 0 ? "Free" : `₹${shippingAmount}`}
+                </span>
               </div>
 
               <Separator />

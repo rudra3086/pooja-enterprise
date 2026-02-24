@@ -92,6 +92,24 @@ CREATE TABLE sessions (
     INDEX idx_expires (expires_at)
 );
 
+-- Password reset tokens
+CREATE TABLE password_resets (
+    id VARCHAR(36) PRIMARY KEY DEFAULT (UUID()),
+    email VARCHAR(255) NOT NULL,
+    user_type ENUM('client', 'admin') NOT NULL,
+    token VARCHAR(500) NOT NULL UNIQUE,
+    token_hash VARCHAR(500) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    is_used BOOLEAN DEFAULT FALSE,
+    
+    -- Timestamps
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_email_type (email, user_type),
+    INDEX idx_token (token),
+    INDEX idx_expires (expires_at)
+);
+
 -- =====================================================
 -- PRODUCTS & CATEGORIES
 -- =====================================================

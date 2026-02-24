@@ -123,7 +123,8 @@ export async function POST(request: NextRequest) {
         if (!product) continue
 
         const unitPrice = item.price || product.basePrice
-        const totalPrice = unitPrice * item.quantity
+        const customizationCost = (item.customization?.additionalCost || 0) * item.quantity
+        const totalPrice = (unitPrice * item.quantity) + customizationCost
         subtotal += totalPrice
 
         // Only include customization if it exists and is not undefined
@@ -159,7 +160,8 @@ export async function POST(request: NextRequest) {
         if (!product) continue
 
         const unitPrice = variant?.price || product.basePrice
-        const totalPrice = unitPrice * item.quantity
+        const customizationCost = (item.customization?.additionalCost || 0) * item.quantity
+        const totalPrice = (unitPrice * item.quantity) + customizationCost
         subtotal += totalPrice
 
         orderItems.push({

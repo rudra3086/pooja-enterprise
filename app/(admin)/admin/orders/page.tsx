@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Filter, Eye, Package } from "lucide-react"
+import { Search, Filter, Eye, Package, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -322,26 +322,76 @@ export default function AdminOrdersPage() {
                   <h4 className="font-medium">Items</h4>
                   {selectedOrder.items && selectedOrder.items.length > 0 ? (
                     selectedOrder.items.map((item, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded bg-background flex items-center justify-center">
-                            <Package className="h-5 w-5 text-muted-foreground" />
+                      <div key={index} className="rounded-lg bg-muted p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded bg-background flex items-center justify-center">
+                              <Package className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">
+                                {item.productName}
+                                {item.variantName && ` - ${item.variantName}`}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Qty: {item.quantity} 
+                                {item.customization && " • Customized"}
+                                {item.sku && ` • SKU: ${item.sku}`}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="font-medium text-sm">
-                              {item.productName}
-                              {item.variantName && ` - ${item.variantName}`}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Qty: {item.quantity} 
-                              {item.customization && " • Customized"}
-                              {item.sku && ` • SKU: ${item.sku}`}
-                            </p>
-                          </div>
+                          <span className="font-medium">
+                            ₹{item.totalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
                         </div>
-                        <span className="font-medium">
-                          ₹{item.totalPrice.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
+
+                        {/* Customization Details */}
+                        {item.customization && (
+                          <div className="border-t border-border pt-3 space-y-2">
+                            <p className="text-sm font-medium">Customization Details:</p>
+                            <div className="space-y-2 text-xs">
+                              {(item.customization as any).logoSize && (
+                                <p><span className="text-muted-foreground">Size:</span> {(item.customization as any).logoSize}</p>
+                              )}
+                              {(item.customization as any).logoPosition && (
+                                <p><span className="text-muted-foreground">Position:</span> {(item.customization as any).logoPosition}</p>
+                              )}
+                              {(item.customization as any).additionalCost !== undefined && (
+                                <p><span className="text-muted-foreground">Customization Cost:</span> ₹{(item.customization as any).additionalCost}</p>
+                              )}
+                            </div>
+
+                            {/* Logo Preview and Download */}
+                            {(item.customization as any).logoFile && (
+                              <div className="border-t border-border pt-3 space-y-2">
+                                <p className="text-sm font-medium">Uploaded Logo:</p>
+                                <div className="flex items-center gap-3">
+                                  <img
+                                    src={(item.customization as any).logoFile}
+                                    alt="Logo"
+                                    className="h-20 w-20 object-contain border border-border rounded"
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      const link = document.createElement("a")
+                                      link.href = (item.customization as any).logoFile
+                                      link.download = `logo-${item.productName}-${Date.now()}.png`
+                                      document.body.appendChild(link)
+                                      link.click()
+                                      document.body.removeChild(link)
+                                    }}
+                                    className="gap-2"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                    Download
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))
                   ) : (

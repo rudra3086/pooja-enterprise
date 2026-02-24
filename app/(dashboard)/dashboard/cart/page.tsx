@@ -12,6 +12,9 @@ import { useCart } from "@/lib/cart-context"
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, totalPrice, clearCart } = useCart()
+  const gst = Math.round(totalPrice * 0.18)
+  const shippingAmount = totalPrice > 10000 ? 0 : 500
+  const grandTotal = totalPrice + gst + shippingAmount
 
   if (items.length === 0) {
     return (
@@ -195,19 +198,21 @@ export default function CartPage() {
 
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">GST (18%)</span>
-                <span>₹{Math.round(totalPrice * 0.18)}</span>
+                <span>₹{gst}</span>
               </div>
 
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Shipping</span>
-                <span className="text-green-600">Free</span>
+                <span className={shippingAmount === 0 ? "text-green-600" : "text-foreground"}>
+                  {shippingAmount === 0 ? "Free" : `₹${shippingAmount}`}
+                </span>
               </div>
 
               <Separator />
 
               <div className="flex justify-between font-semibold text-lg">
                 <span>Total</span>
-                <span>₹{totalPrice + Math.round(totalPrice * 0.18)}</span>
+                <span>₹{grandTotal}</span>
               </div>
 
               <Link href="/dashboard/checkout" className="block">

@@ -139,10 +139,93 @@ export default function DashboardProductsPage() {
     setQuantities((prev) => ({ ...prev, [product.id]: 1 }))
   }
 
+  // Fetch fresh product data when user clicks customize
+  const handleCustomizeClick = async (product: Product) => {
+    try {
+      const response = await fetch(`/api/products/${product.id}`)
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success && result.data) {
+          // Set the fresh product data with updated customization options
+          setCustomizeProduct(result.data)
+        } else {
+          // Fallback to the product from list if API fails
+          setCustomizeProduct(product)
+        }
+      } else {
+        // Fallback to the product from list if API fails
+        setCustomizeProduct(product)
+      }
+    } catch (error) {
+      console.error("Error fetching product for customization:", error)
+      // Fallback to the product from list if API fails
+      setCustomizeProduct(product)
+    }
+  }
+
+  const handleLogoFileSelect = async (file: File) => {
+    // Validate file type
+    const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "application/pdf"]
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload PNG, JPG, or PDF files only",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Validate file size (5MB max)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      toast({
+        title: "File too large",
+        description: "Please upload a file smaller than 5MB",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Convert to data URL
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string
+      setCustomization((prev) => ({ ...prev, logoFile: dataUrl }))
+      toast({
+        title: "Logo uploaded",
+        description: file.name,
+      })
+    }
+    reader.onerror = () => {
+      toast({
+        title: "Error uploading file",
+        description: "Failed to read the file",
+        variant: "destructive",
+      })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleLogoInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      handleLogoFileSelect(file)
+    }
+  }
+
+  const handleLogoDragAndDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const file = e.dataTransfer.files?.[0]
+    if (file) {
+      handleLogoFileSelect(file)
+    }
+  }
+
   const calculateCustomizationCost = () => {
     if (!customizeProduct?.customizationOptions) return 0
     
-    // Default values if not set
+    // Default values if not set in database
     const defaultLogoSizes = [
       { value: "small", label: "Small (2cm)", price: 50 },
       { value: "medium", label: "Medium (4cm)", price: 100 },
@@ -314,7 +397,7 @@ export default function DashboardProductsPage() {
                     {product.isCustomizable && (
                       <Button
                         variant="outline"
-                        onClick={() => setCustomizeProduct(product)}
+                        onClick={() => handleCustomizeClick(product)}
                         className="gap-2"
                       >
                         <Palette className="h-4 w-4" />
@@ -364,27 +447,59 @@ export default function DashboardProductsPage() {
                 {/* Logo Upload */}
                 <div className="space-y-2">
                   <Label>Upload Logo</Label>
-                  <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                  <input
+                    ref={(input) => {
+                      if (input && !input.dataset.logoInput) {
+                        input.dataset.logoInput = "true"
+                      }
+                    }}
+                    id="logo-input"
+                    type="file"
+                    accept=".png,.jpg,.jpeg,.pdf"
+                    className="hidden"
+                    onChange={handleLogoInputChange}
+                  />
+                  <div
+                    className="border-2 border-dashed border-border rounded-lg p-6 text-center transition-colors hover:border-primary hover:bg-muted/50"
+                    onDragOver={(e) => {
+                      e.preventDefault()
+                      e.stopPropagation()
+                    }}
+                    onDrop={handleLogoDragAndDrop}
+                  >
                     {customization.logoFile ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <span className="text-sm text-muted-foreground">
-                          {customization.logoFile}
-                        </span>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-center">
+                          <img
+                            src={customization.logoFile}
+                            alt="Uploaded logo"
+                            className="max-h-32 max-w-32 rounded"
+                          />
+                        </div>
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="text-sm text-muted-foreground">Logo uploaded</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => setCustomization((prev) => ({ ...prev, logoFile: null }))}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => setCustomization((prev) => ({ ...prev, logoFile: null }))}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => document.getElementById("logo-input")?.click()}
                         >
-                          <X className="h-4 w-4" />
+                          <Upload className="h-4 w-4 mr-2" />
+                          Change Logo
                         </Button>
                       </div>
                     ) : (
                       <div
                         className="cursor-pointer"
-                        onClick={() =>
-                          setCustomization((prev) => ({ ...prev, logoFile: "company-logo.png" }))
-                        }
+                        onClick={() => document.getElementById("logo-input")?.click()}
                       >
                         <Upload className="h-8 w-8 mx-auto text-muted-foreground" />
                         <p className="mt-2 text-sm text-muted-foreground">
