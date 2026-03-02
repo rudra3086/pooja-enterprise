@@ -105,7 +105,7 @@ export default function RegisterPage() {
               alt="Pooja Enterprise"
               width={40}
               height={40}
-              className="h-10 w-10"
+              className="h-10 w-10 rounded-full"
             />
             <span className="font-serif text-2xl font-semibold">Pooja Enterprise</span>
           </Link>
@@ -158,7 +158,7 @@ export default function RegisterPage() {
                 alt="Pooja Enterprise"
                 width={32}
                 height={32}
-                className="h-8 w-8 header-logo"
+                className="h-8 w-8 rounded-full header-logo"
               />
               <span className="font-serif text-xl font-semibold">Pooja Enterprise</span>
             </Link>

@@ -131,7 +131,7 @@ export default function AdminForgotPasswordPage() {
                 alt="Pooja Enterprise"
                 width={40}
                 height={40}
-                className="h-10 w-10"
+                className="h-10 w-10 rounded-full"
               />
               <span className="font-serif text-2xl font-semibold">Pooja Enterprise</span>
             </Link>

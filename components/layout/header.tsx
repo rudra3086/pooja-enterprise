@@ -28,7 +28,7 @@ export function Header() {
               alt="Pooja Enterprise"
               width={32}
               height={32}
-              className="h-8 w-8 rounded-sm lg:h-10 lg:w-10"
+              className="h-8 w-8 rounded-full lg:h-10 lg:w-10"
             />
             <span className="font-serif text-xl font-semibold tracking-tight lg:text-2xl">
               Pooja Enterprise

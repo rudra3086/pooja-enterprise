@@ -354,7 +354,7 @@ export default function HomePage() {
                     whileTap={{ scale: 0.95 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <Button variant="outline" className="home-products-view-all-btn gap-2 group bg-transparent dark:hover:bg-white dark:hover:text-black dark:hover:border-white">
+                    <Button variant="outline" className="gap-2 group bg-transparent">
                       View All
                       <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                     </Button>
@@ -414,7 +414,7 @@ export default function HomePage() {
                       
                             variant="outline"
                             size="sm"
-                            className="home-login-order-btn w-full dark:hover:bg-white dark:hover:text-black dark:hover:border-white"
+                            className="w-full"
                           >
                             Login to Order
                           </Button>

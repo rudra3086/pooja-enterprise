@@ -88,14 +88,6 @@ html.dark video {
   filter: invert(1) hue-rotate(180deg);
 }
 
-.dark .home-login-order-btn:hover {
-  filter: invert(1) hue-rotate(180deg);
-}
-
-.dark .home-products-view-all-btn:hover {
-  filter: invert(1) hue-rotate(180deg);
-}
-
 .dark [data-slot='button']:hover {
   background-color: white !important;
   color: black !important;
@@ -174,6 +166,18 @@ html.dark video {
   * {
     @apply border-border outline-ring/50;
   }
+
+  img[alt*='Pooja Enterprise'] {
+    display: block;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 50% !important;
+    overflow: hidden;
+    clip-path: circle(50%);
+    transform: scale(1.08);
+    transform-origin: center;
+  }
+
   body {
     @apply bg-background text-foreground;
   }
