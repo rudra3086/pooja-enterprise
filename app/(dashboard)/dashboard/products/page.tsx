@@ -248,6 +248,15 @@ export default function DashboardProductsPage() {
   const handleAddCustomizedToCart = () => {
     if (!customizeProduct) return
 
+    if (!customization.logoFile) {
+      toast({
+        title: "Upload logo first",
+        description: "Please upload your logo before selecting position and adding to cart.",
+        variant: "destructive",
+      })
+      return
+    }
+
     const customizationData: Customization = {
       ...customization,
       additionalCost: calculateCustomizationCost(),
@@ -433,7 +442,7 @@ export default function DashboardProductsPage() {
           
           return (
           <Dialog open={!!customizeProduct} onOpenChange={() => setCustomizeProduct(null)}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
               <DialogHeader>
                 <DialogTitle className="font-serif text-xl">
                   Customize {customizeProduct.name}
@@ -443,7 +452,7 @@ export default function DashboardProductsPage() {
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="space-y-6 py-4">
+              <div className="space-y-6 py-4 overflow-y-auto pr-1">
                 {/* Logo Upload */}
                 <div className="space-y-2">
                   <Label>Upload Logo</Label>
@@ -546,6 +555,11 @@ export default function DashboardProductsPage() {
                 {/* Logo Position */}
                 <div className="space-y-3">
                   <Label>Logo Position</Label>
+                  {!customization.logoFile && (
+                    <p className="text-xs text-muted-foreground">
+                      Upload logo first to choose logo position.
+                    </p>
+                  )}
                   <RadioGroup
                     value={customization.logoPosition}
                     onValueChange={(value) =>
@@ -554,6 +568,7 @@ export default function DashboardProductsPage() {
                         logoPosition: value as "center" | "corner" | "repeated",
                       }))
                     }
+                    disabled={!customization.logoFile}
                     className="grid grid-cols-3 gap-3"
                   >
                     {logoPositions.map((position) => (
@@ -561,11 +576,12 @@ export default function DashboardProductsPage() {
                         <RadioGroupItem
                           value={position.value}
                           id={position.value}
+                          disabled={!customization.logoFile}
                           className="peer sr-only"
                         />
                         <Label
                           htmlFor={position.value}
-                          className="flex flex-col items-center justify-center rounded-lg border-2 border-border bg-card p-3 cursor-pointer transition-all peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-muted"
+                          className={`flex flex-col items-center justify-center rounded-lg border-2 border-border bg-card p-3 transition-all peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-muted ${customization.logoFile ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
                         >
                           <span className="text-sm font-medium">{position.label}</span>
                           {position.price > 0 && (
@@ -598,11 +614,11 @@ export default function DashboardProductsPage() {
                 </div>
               </div>
 
-              <DialogFooter>
+              <DialogFooter className="shrink-0">
                 <Button variant="outline" onClick={() => setCustomizeProduct(null)}>
                   Cancel
                 </Button>
-                <Button onClick={handleAddCustomizedToCart} className="gap-2">
+                <Button onClick={handleAddCustomizedToCart} className="gap-2" disabled={!customization.logoFile}>
                   <ShoppingCart className="h-4 w-4" />
                   Add to Cart
                 </Button>

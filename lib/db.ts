@@ -10,22 +10,32 @@ import {
   OrderItem, 
   CartItem,
   Cart,
-  Session
+  Session,
+  DeliverySettings,
+  ContactMessage
 } from "@/lib/types"
 
-// Create connection pool
-const pool: Pool = mysql.createPool({
+declare global {
+  var __poojaMysqlPool: Pool | undefined
+}
+
+// Create/reuse a single connection pool (important for Next.js dev hot reload)
+const pool: Pool = global.__poojaMysqlPool ?? mysql.createPool({
   host: process.env.MYSQL_HOST || "localhost",
   port: parseInt(process.env.MYSQL_PORT || "3306"),
   user: process.env.MYSQL_USER || "root",
   password: process.env.MYSQL_PASSWORD || "",
   database: process.env.MYSQL_DATABASE || "pooja_enterprise",
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: parseInt(process.env.MYSQL_CONNECTION_LIMIT || "10"),
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
 })
+
+if (!global.__poojaMysqlPool) {
+  global.__poojaMysqlPool = pool
+}
 
 // Helper to execute queries
 export async function query<T extends RowDataPacket[]>(
@@ -1228,6 +1238,363 @@ export async function clearCart(cartId: string): Promise<boolean> {
   return result.affectedRows >= 0
 }
 
+let deliverySchemaReadyPromise: Promise<void> | null = null
+let contactSchemaReadyPromise: Promise<void> | null = null
+
+async function ensureDeliverySchema(): Promise<void> {
+  if (!deliverySchemaReadyPromise) {
+    deliverySchemaReadyPromise = (async () => {
+      await execute(
+        `CREATE TABLE IF NOT EXISTS delivery_settings (
+          id VARCHAR(36) PRIMARY KEY,
+          production_latitude DECIMAL(10, 7) NOT NULL,
+          production_longitude DECIMAL(10, 7) NOT NULL,
+          delivery_cost_per_km DECIMAL(10, 2) NOT NULL DEFAULT 12.00,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        )`
+      )
+
+      await execute(
+        `INSERT INTO delivery_settings (
+          id,
+          production_latitude,
+          production_longitude,
+          delivery_cost_per_km
+        )
+        SELECT 'default', 21.6338638, 73.0193249, 12.00
+        WHERE NOT EXISTS (
+          SELECT 1 FROM delivery_settings WHERE id = 'default'
+        )`
+      )
+
+      const alterStatements = [
+        "ALTER TABLE orders ADD COLUMN requires_shipping BOOLEAN NOT NULL DEFAULT TRUE",
+        "ALTER TABLE orders ADD COLUMN delivery_latitude DECIMAL(10, 7) NULL",
+        "ALTER TABLE orders ADD COLUMN delivery_longitude DECIMAL(10, 7) NULL",
+        "ALTER TABLE orders ADD COLUMN production_latitude DECIMAL(10, 7) NULL",
+        "ALTER TABLE orders ADD COLUMN production_longitude DECIMAL(10, 7) NULL",
+        "ALTER TABLE orders ADD COLUMN distance_km DECIMAL(10, 2) NULL",
+        "ALTER TABLE orders ADD COLUMN delivery_cost_per_km DECIMAL(10, 2) NULL",
+      ]
+
+      for (const statement of alterStatements) {
+        try {
+          await execute(statement)
+        } catch (error: any) {
+          if (error?.code !== "ER_DUP_FIELDNAME") {
+            throw error
+          }
+        }
+      }
+
+      await execute(
+        `UPDATE contact_messages
+         SET status = 'new'
+         WHERE status IS NULL OR status = ''`
+      )
+    })()
+  }
+
+  await deliverySchemaReadyPromise
+}
+
+export function calculateDistanceKm(
+  originLatitude: number,
+  originLongitude: number,
+  destinationLatitude: number,
+  destinationLongitude: number
+): number {
+  const toRadians = (degrees: number) => (degrees * Math.PI) / 180
+  const earthRadiusKm = 6371
+
+  const latitudeDifference = toRadians(destinationLatitude - originLatitude)
+  const longitudeDifference = toRadians(destinationLongitude - originLongitude)
+  const latitude1 = toRadians(originLatitude)
+  const latitude2 = toRadians(destinationLatitude)
+
+  const haversineA =
+    Math.sin(latitudeDifference / 2) * Math.sin(latitudeDifference / 2) +
+    Math.cos(latitude1) * Math.cos(latitude2) *
+    Math.sin(longitudeDifference / 2) * Math.sin(longitudeDifference / 2)
+
+  const haversineC = 2 * Math.atan2(Math.sqrt(haversineA), Math.sqrt(1 - haversineA))
+  return earthRadiusKm * haversineC
+}
+
+export async function getDeliverySettings(): Promise<DeliverySettings> {
+  await ensureDeliverySchema()
+
+  const rows = await query<RowDataPacket[]>(
+    `SELECT
+      id,
+      production_latitude as productionLatitude,
+      production_longitude as productionLongitude,
+      delivery_cost_per_km as deliveryCostPerKm,
+      created_at as createdAt,
+      updated_at as updatedAt
+    FROM delivery_settings
+    WHERE id = 'default'
+    LIMIT 1`
+  )
+
+  const row = rows[0]
+  return {
+    id: row.id,
+    productionLatitude: parseFloat(row.productionLatitude),
+    productionLongitude: parseFloat(row.productionLongitude),
+    deliveryCostPerKm: parseFloat(row.deliveryCostPerKm),
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }
+}
+
+export async function updateDeliverySettings(updates: {
+  productionLatitude?: number
+  productionLongitude?: number
+  deliveryCostPerKm?: number
+}): Promise<DeliverySettings> {
+  await ensureDeliverySchema()
+
+  const setClauses: string[] = []
+  const params: (number | string)[] = []
+
+  if (updates.productionLatitude !== undefined) {
+    setClauses.push("production_latitude = ?")
+    params.push(updates.productionLatitude)
+  }
+
+  if (updates.productionLongitude !== undefined) {
+    setClauses.push("production_longitude = ?")
+    params.push(updates.productionLongitude)
+  }
+
+  if (updates.deliveryCostPerKm !== undefined) {
+    setClauses.push("delivery_cost_per_km = ?")
+    params.push(updates.deliveryCostPerKm)
+  }
+
+  if (setClauses.length > 0) {
+    params.push("default")
+    await execute(
+      `UPDATE delivery_settings
+       SET ${setClauses.join(", ")}, updated_at = NOW()
+       WHERE id = ?`,
+      params
+    )
+  }
+
+  return await getDeliverySettings()
+}
+
+async function ensureContactSchema(): Promise<void> {
+  if (!contactSchemaReadyPromise) {
+    contactSchemaReadyPromise = (async () => {
+      await execute(
+        `CREATE TABLE IF NOT EXISTS contact_messages (
+          id VARCHAR(36) PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          email VARCHAR(255) NOT NULL,
+          company VARCHAR(255),
+          phone VARCHAR(20),
+          subject VARCHAR(255) NOT NULL,
+          message TEXT NOT NULL,
+          status ENUM('new', 'replied') DEFAULT 'new',
+          admin_reply TEXT,
+          replied_by_admin_id VARCHAR(36),
+          replied_at TIMESTAMP NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_status (status),
+          INDEX idx_created (created_at),
+          INDEX idx_email (email)
+        )`
+      )
+
+      const alterStatements = [
+        "ALTER TABLE contact_messages ADD COLUMN company VARCHAR(255)",
+        "ALTER TABLE contact_messages ADD COLUMN phone VARCHAR(20)",
+        "ALTER TABLE contact_messages ADD COLUMN subject VARCHAR(255) NOT NULL DEFAULT 'Website Inquiry'",
+        "ALTER TABLE contact_messages ADD COLUMN status ENUM('new', 'replied') DEFAULT 'new'",
+        "ALTER TABLE contact_messages ADD COLUMN admin_reply TEXT",
+        "ALTER TABLE contact_messages ADD COLUMN replied_by_admin_id VARCHAR(36)",
+        "ALTER TABLE contact_messages ADD COLUMN replied_at TIMESTAMP NULL",
+      ]
+
+      for (const statement of alterStatements) {
+        try {
+          await execute(statement)
+        } catch (error: any) {
+          if (error?.code !== "ER_DUP_FIELDNAME") {
+            throw error
+          }
+        }
+      }
+    })()
+  }
+
+  await contactSchemaReadyPromise
+}
+
+export async function createContactMessage(data: {
+  name: string
+  email: string
+  company?: string
+  phone?: string
+  subject: string
+  message: string
+}): Promise<string> {
+  await ensureContactSchema()
+  const id = `cm-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+  await execute(
+    `INSERT INTO contact_messages (
+      id, name, email, company, phone, subject, message, status
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, 'new')`,
+    [
+      id,
+      data.name,
+      data.email,
+      data.company || null,
+      data.phone || null,
+      data.subject,
+      data.message,
+    ]
+  )
+
+  return id
+}
+
+export async function getContactMessageById(id: string): Promise<ContactMessage | null> {
+  await ensureContactSchema()
+
+  const rows = await query<RowDataPacket[]>(
+    `SELECT
+      id,
+      name,
+      email,
+      company,
+      phone,
+      subject,
+      message,
+      status,
+      admin_reply as adminReply,
+      replied_by_admin_id as repliedByAdminId,
+      replied_at as repliedAt,
+      created_at as createdAt,
+      updated_at as updatedAt
+    FROM contact_messages
+    WHERE id = ?
+    LIMIT 1`,
+    [id]
+  )
+
+  if (rows.length === 0) return null
+  const row = rows[0]
+
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    company: row.company,
+    phone: row.phone,
+    subject: row.subject,
+    message: row.message,
+    status: row.status || "new",
+    adminReply: row.adminReply,
+    repliedByAdminId: row.repliedByAdminId,
+    repliedAt: row.repliedAt,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }
+}
+
+export async function getContactMessages(options?: {
+  status?: "new" | "replied"
+  limit?: number
+  offset?: number
+}): Promise<{ messages: ContactMessage[]; total: number }> {
+  await ensureContactSchema()
+
+  let whereClause = "WHERE 1=1"
+  const params: (string | number)[] = []
+
+  if (options?.status) {
+    whereClause += " AND status = ?"
+    params.push(options.status)
+  }
+
+  const countRows = await query<RowDataPacket[]>(
+    `SELECT COUNT(*) as total FROM contact_messages ${whereClause}`,
+    params
+  )
+  const total = countRows[0].total
+
+  let sql = `
+    SELECT
+      id,
+      name,
+      email,
+      company,
+      phone,
+      subject,
+      message,
+      status,
+      admin_reply as adminReply,
+      replied_by_admin_id as repliedByAdminId,
+      replied_at as repliedAt,
+      created_at as createdAt,
+      updated_at as updatedAt
+    FROM contact_messages
+    ${whereClause}
+    ORDER BY created_at DESC
+  `
+
+  if (options?.limit) {
+    sql += ` LIMIT ${options.limit}`
+    if (options?.offset) {
+      sql += ` OFFSET ${options.offset}`
+    }
+  }
+
+  const rows = await query<RowDataPacket[]>(sql, params)
+  const messages: ContactMessage[] = rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    company: row.company,
+    phone: row.phone,
+    subject: row.subject,
+    message: row.message,
+    status: row.status || "new",
+    adminReply: row.adminReply,
+    repliedByAdminId: row.repliedByAdminId,
+    repliedAt: row.repliedAt,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }))
+
+  return { messages, total }
+}
+
+export async function replyToContactMessage(
+  messageId: string,
+  adminReply: string,
+  adminId: string
+): Promise<ContactMessage | null> {
+  await ensureContactSchema()
+
+  const result = await execute(
+    `UPDATE contact_messages
+     SET status = 'replied', admin_reply = ?, replied_by_admin_id = ?, replied_at = NOW(), updated_at = NOW()
+     WHERE id = ?`,
+    [adminReply, adminId, messageId]
+  )
+
+  if (result.affectedRows === 0) return null
+  return await getContactMessageById(messageId)
+}
+
 // =====================================================
 // ORDER FUNCTIONS
 // =====================================================
@@ -1253,6 +1620,13 @@ export async function createOrder(data: {
   shippingCity: string
   shippingState: string
   shippingPostalCode: string
+  requiresShipping: boolean
+  deliveryLatitude?: number
+  deliveryLongitude?: number
+  productionLatitude?: number
+  productionLongitude?: number
+  distanceKm?: number
+  deliveryCostPerKm?: number
   paymentMethod: "bank_transfer" | "upi" | "credit_terms"
   customerNotes?: string
   items: {
@@ -1267,6 +1641,7 @@ export async function createOrder(data: {
     customization?: object
   }[]
 }): Promise<Order> {
+  await ensureDeliverySchema()
   const connection = await getConnection()
   
   try {
@@ -1286,13 +1661,24 @@ export async function createOrder(data: {
         id, client_id, order_number, status, payment_status, payment_method,
         subtotal, tax_amount, shipping_amount, discount_amount, total_amount,
         shipping_name, shipping_phone, shipping_address_line1, shipping_address_line2,
-        shipping_city, shipping_state, shipping_postal_code, shipping_country, customer_notes
-      ) VALUES (?, ?, ?, 'pending', 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'India', ?)`,
+        shipping_city, shipping_state, shipping_postal_code, shipping_country,
+        requires_shipping, delivery_latitude, delivery_longitude,
+        production_latitude, production_longitude, distance_km, delivery_cost_per_km,
+        customer_notes
+      ) VALUES (?, ?, ?, 'pending', 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'India', ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         orderId, data.clientId, data.orderNumber, data.paymentMethod,
         data.subtotal, data.taxAmount, data.shippingAmount, data.discountAmount, data.totalAmount,
         data.shippingName, data.shippingPhone, data.shippingAddressLine1, data.shippingAddressLine2 || null,
-        data.shippingCity, data.shippingState, data.shippingPostalCode, data.customerNotes || null
+        data.shippingCity, data.shippingState, data.shippingPostalCode,
+        data.requiresShipping,
+        data.deliveryLatitude ?? null,
+        data.deliveryLongitude ?? null,
+        data.productionLatitude ?? null,
+        data.productionLongitude ?? null,
+        data.distanceKm ?? null,
+        data.deliveryCostPerKm ?? null,
+        data.customerNotes || null
       ]
     )
 
@@ -1373,6 +1759,7 @@ export async function createOrder(data: {
 }
 
 export async function getOrderById(id: string): Promise<Order | null> {
+  await ensureDeliverySchema()
   const rows = await query<RowDataPacket[]>(
     `SELECT 
       o.id, o.client_id as clientId, o.order_number as orderNumber, o.status, 
@@ -1383,6 +1770,10 @@ export async function getOrderById(id: string): Promise<Order | null> {
       o.shipping_address_line1 as shippingAddressLine1, o.shipping_address_line2 as shippingAddressLine2,
       o.shipping_city as shippingCity, o.shipping_state as shippingState,
       o.shipping_postal_code as shippingPostalCode, o.shipping_country as shippingCountry,
+      o.requires_shipping as requiresShipping,
+      o.delivery_latitude as deliveryLatitude, o.delivery_longitude as deliveryLongitude,
+      o.production_latitude as productionLatitude, o.production_longitude as productionLongitude,
+      o.distance_km as distanceKm, o.delivery_cost_per_km as deliveryCostPerKm,
       o.customer_notes as customerNotes, o.admin_notes as adminNotes,
       o.tracking_number as trackingNumber, o.shipped_at as shippedAt, o.delivered_at as deliveredAt,
       o.created_at as createdAt, o.updated_at as updatedAt
@@ -1397,12 +1788,14 @@ export async function getOrderById(id: string): Promise<Order | null> {
   // Get order items
   const itemRows = await query<RowDataPacket[]>(
     `SELECT 
-      id, order_id as orderId, product_id as productId, variant_id as variantId,
+      oi.id, oi.order_id as orderId, oi.product_id as productId, oi.variant_id as variantId,
+      p.image_url as productImageUrl,
       product_name as productName, variant_name as variantName, sku,
       quantity, unit_price as unitPrice, total_price as totalPrice, customization,
-      created_at as createdAt
-    FROM order_items 
-    WHERE order_id = ?`,
+      oi.created_at as createdAt
+    FROM order_items oi
+    LEFT JOIN products p ON oi.product_id = p.id
+    WHERE oi.order_id = ?`,
     [id]
   )
 
@@ -1424,6 +1817,7 @@ export async function getOrderById(id: string): Promise<Order | null> {
     id: item.id,
     orderId: item.orderId,
     productId: item.productId,
+    productImageUrl: item.productImageUrl,
     variantId: item.variantId,
     productName: item.productName,
     variantName: item.variantName,
@@ -1458,6 +1852,13 @@ export async function getOrderById(id: string): Promise<Order | null> {
     shippingState: row.shippingState,
     shippingPostalCode: row.shippingPostalCode,
     shippingCountry: row.shippingCountry,
+    requiresShipping: Boolean(row.requiresShipping),
+    deliveryLatitude: row.deliveryLatitude !== null ? parseFloat(row.deliveryLatitude) : undefined,
+    deliveryLongitude: row.deliveryLongitude !== null ? parseFloat(row.deliveryLongitude) : undefined,
+    productionLatitude: row.productionLatitude !== null ? parseFloat(row.productionLatitude) : undefined,
+    productionLongitude: row.productionLongitude !== null ? parseFloat(row.productionLongitude) : undefined,
+    distanceKm: row.distanceKm !== null ? parseFloat(row.distanceKm) : undefined,
+    deliveryCostPerKm: row.deliveryCostPerKm !== null ? parseFloat(row.deliveryCostPerKm) : undefined,
     customerNotes: row.customerNotes,
     adminNotes: row.adminNotes,
     trackingNumber: row.trackingNumber,
@@ -1477,6 +1878,7 @@ export async function getOrders(options?: {
   limit?: number
   offset?: number
 }): Promise<{ orders: Order[]; total: number }> {
+  await ensureDeliverySchema()
   let whereClause = "WHERE 1=1"
   const params: (string | number)[] = []
 
@@ -1511,6 +1913,10 @@ export async function getOrders(options?: {
       o.shipping_address_line1 as shippingAddressLine1, o.shipping_address_line2 as shippingAddressLine2,
       o.shipping_city as shippingCity, o.shipping_state as shippingState,
       o.shipping_postal_code as shippingPostalCode, o.shipping_country as shippingCountry,
+      o.requires_shipping as requiresShipping,
+      o.delivery_latitude as deliveryLatitude, o.delivery_longitude as deliveryLongitude,
+      o.production_latitude as productionLatitude, o.production_longitude as productionLongitude,
+      o.distance_km as distanceKm, o.delivery_cost_per_km as deliveryCostPerKm,
       o.customer_notes as customerNotes, o.admin_notes as adminNotes,
       o.tracking_number as trackingNumber, o.shipped_at as shippedAt, o.delivered_at as deliveredAt,
       o.created_at as createdAt, o.updated_at as updatedAt,
@@ -1551,12 +1957,14 @@ export async function getOrders(options?: {
   if (orderIds.length > 0) {
     const itemRows = await query<RowDataPacket[]>(
       `SELECT 
-        id, order_id as orderId, product_id as productId, variant_id as variantId,
+        oi.id, oi.order_id as orderId, oi.product_id as productId, oi.variant_id as variantId,
+        p.image_url as productImageUrl,
         product_name as productName, variant_name as variantName, sku,
         quantity, unit_price as unitPrice, total_price as totalPrice, customization,
-        created_at as createdAt
-      FROM order_items 
-      WHERE order_id IN (${orderIds.map(() => '?').join(',')})`,
+        oi.created_at as createdAt
+      FROM order_items oi
+      LEFT JOIN products p ON oi.product_id = p.id
+      WHERE oi.order_id IN (${orderIds.map(() => '?').join(',')})`,
       orderIds
     )
     
@@ -1569,6 +1977,7 @@ export async function getOrders(options?: {
         id: item.id,
         orderId: item.orderId,
         productId: item.productId,
+        productImageUrl: item.productImageUrl,
         variantId: item.variantId,
         productName: item.productName,
         variantName: item.variantName,
@@ -1602,6 +2011,13 @@ export async function getOrders(options?: {
     shippingState: row.shippingState,
     shippingPostalCode: row.shippingPostalCode,
     shippingCountry: row.shippingCountry,
+    requiresShipping: Boolean(row.requiresShipping),
+    deliveryLatitude: row.deliveryLatitude !== null ? parseFloat(row.deliveryLatitude) : undefined,
+    deliveryLongitude: row.deliveryLongitude !== null ? parseFloat(row.deliveryLongitude) : undefined,
+    productionLatitude: row.productionLatitude !== null ? parseFloat(row.productionLatitude) : undefined,
+    productionLongitude: row.productionLongitude !== null ? parseFloat(row.productionLongitude) : undefined,
+    distanceKm: row.distanceKm !== null ? parseFloat(row.distanceKm) : undefined,
+    deliveryCostPerKm: row.deliveryCostPerKm !== null ? parseFloat(row.deliveryCostPerKm) : undefined,
     customerNotes: row.customerNotes,
     adminNotes: row.adminNotes,
     trackingNumber: row.trackingNumber,

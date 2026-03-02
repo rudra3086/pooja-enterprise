@@ -41,7 +41,7 @@ export function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-black"
               >
                 {link.label}
               </Link>
@@ -51,7 +51,7 @@ export function Header() {
           {/* Desktop Actions */}
           <div className="hidden lg:flex lg:items-center lg:gap-4">
             <Link href="/login">
-              <Button variant="ghost" size="sm" className="gap-2">
+              <Button variant="ghost" size="sm" className="gap-2 hover:bg-black hover:text-white">
                 <User className="h-4 w-4" />
                 Login
               </Button>
@@ -88,7 +88,7 @@ export function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-black"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {link.label}
@@ -96,7 +96,7 @@ export function Header() {
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-border mt-2">
                 <Link href="/login" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                  <Button variant="ghost" size="sm" className="w-full justify-start gap-2 hover:bg-black hover:text-white">
                     <User className="h-4 w-4" />
                     Login
                   </Button>

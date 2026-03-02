@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Package, Save, X, Check } from "lucide-react"
+import { Package, Save, X, Check, Truck, MapPin } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/hooks/use-toast"
+import { LocationPicker } from "@/components/map/location-picker"
+import type { DeliverySettings } from "@/lib/types"
 import {
   Dialog,
   DialogContent,
@@ -45,6 +47,13 @@ export default function AdminProductsPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [deliverySettings, setDeliverySettings] = useState<DeliverySettings | null>(null)
+  const [deliveryForm, setDeliveryForm] = useState({
+    productionLatitude: "",
+    productionLongitude: "",
+    deliveryCostPerKm: "",
+  })
+  const [savingDeliverySettings, setSavingDeliverySettings] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -64,6 +73,7 @@ export default function AdminProductsPage() {
 
   useEffect(() => {
     fetchProducts()
+    fetchDeliverySettings()
   }, [])
 
   const fetchProducts = async () => {
@@ -89,6 +99,77 @@ export default function AdminProductsPage() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchDeliverySettings = async () => {
+    try {
+      const response = await fetch("/api/admin/delivery-settings")
+      const data = await response.json()
+
+      if (data.success && data.data) {
+        setDeliverySettings(data.data)
+        setDeliveryForm({
+          productionLatitude: String(data.data.productionLatitude),
+          productionLongitude: String(data.data.productionLongitude),
+          deliveryCostPerKm: String(data.data.deliveryCostPerKm),
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching delivery settings:", error)
+    }
+  }
+
+  const handleSaveDeliverySettings = async () => {
+    const productionLatitude = Number(deliveryForm.productionLatitude)
+    const productionLongitude = Number(deliveryForm.productionLongitude)
+    const deliveryCostPerKm = Number(deliveryForm.deliveryCostPerKm)
+
+    if (Number.isNaN(productionLatitude) || Number.isNaN(productionLongitude) || Number.isNaN(deliveryCostPerKm)) {
+      toast({
+        title: "Invalid input",
+        description: "Please enter valid numeric values for delivery settings.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setSavingDeliverySettings(true)
+      const response = await fetch("/api/admin/delivery-settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productionLatitude,
+          productionLongitude,
+          deliveryCostPerKm,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success && data.data) {
+        setDeliverySettings(data.data)
+        toast({
+          title: "Delivery settings updated",
+          description: "New cost/km and production location will apply to new orders.",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to update delivery settings",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error updating delivery settings:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update delivery settings",
+        variant: "destructive",
+      })
+    } finally {
+      setSavingDeliverySettings(false)
     }
   }
 
@@ -267,6 +348,75 @@ export default function AdminProductsPage() {
           ))}
         </div>
       )}
+
+      <Card>
+        <CardContent className="p-4 grid gap-4 md:grid-cols-4">
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2">
+              <Truck className="h-4 w-4" />
+              Delivery Cost / km
+            </Label>
+            <Input
+              value={deliveryForm.deliveryCostPerKm}
+              onChange={(e) => setDeliveryForm((prev) => ({ ...prev, deliveryCostPerKm: e.target.value }))}
+              placeholder="12"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Production Latitude</Label>
+            <Input
+              value={deliveryForm.productionLatitude}
+              onChange={(e) => setDeliveryForm((prev) => ({ ...prev, productionLatitude: e.target.value }))}
+              placeholder="21.6338638"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Production Longitude</Label>
+            <Input
+              value={deliveryForm.productionLongitude}
+              onChange={(e) => setDeliveryForm((prev) => ({ ...prev, productionLongitude: e.target.value }))}
+              placeholder="73.0193249"
+            />
+          </div>
+          <div className="flex items-end">
+            <Button className="w-full" onClick={handleSaveDeliverySettings} disabled={savingDeliverySettings}>
+              {savingDeliverySettings ? "Saving..." : "Save Delivery Settings"}
+            </Button>
+          </div>
+          <div className="space-y-2 md:col-span-4">
+            <Label className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Select Production Location on Map
+            </Label>
+            <LocationPicker
+              value={
+                deliveryForm.productionLatitude && deliveryForm.productionLongitude
+                  ? {
+                      latitude: Number(deliveryForm.productionLatitude),
+                      longitude: Number(deliveryForm.productionLongitude),
+                    }
+                  : undefined
+              }
+              onChange={(location) => {
+                setDeliveryForm((prev) => ({
+                  ...prev,
+                  productionLatitude: location.latitude.toFixed(7),
+                  productionLongitude: location.longitude.toFixed(7),
+                }))
+              }}
+              heightClassName="h-72"
+            />
+            <p className="text-xs text-muted-foreground">
+              Click map or drag marker to auto-update production coordinates.
+            </p>
+          </div>
+          {deliverySettings && (
+            <p className="text-xs text-muted-foreground md:col-span-4">
+              Current setting: ₹{deliverySettings.deliveryCostPerKm}/km from ({deliverySettings.productionLatitude.toFixed(6)}, {deliverySettings.productionLongitude.toFixed(6)})
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Edit Dialog */}
       <Dialog open={!!editingProduct} onOpenChange={() => setEditingProduct(null)}>

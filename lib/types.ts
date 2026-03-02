@@ -142,6 +142,7 @@ export interface OrderItem {
   productId: string
   variantId?: string
   productName: string
+  productImageUrl?: string
   variantName?: string
   sku?: string
   quantity: number
@@ -171,6 +172,13 @@ export interface Order {
   shippingState: string
   shippingPostalCode: string
   shippingCountry: string
+  requiresShipping: boolean
+  deliveryLatitude?: number
+  deliveryLongitude?: number
+  productionLatitude?: number
+  productionLongitude?: number
+  distanceKm?: number
+  deliveryCostPerKm?: number
   customerNotes?: string
   adminNotes?: string
   trackingNumber?: string
@@ -212,6 +220,7 @@ export interface AddToCartRequest {
 }
 
 export interface CreateOrderRequest {
+  requiresShipping?: boolean
   shippingName: string
   shippingPhone: string
   shippingAddressLine1: string
@@ -219,8 +228,35 @@ export interface CreateOrderRequest {
   shippingCity: string
   shippingState: string
   shippingPostalCode: string
+  deliveryLatitude?: number
+  deliveryLongitude?: number
   paymentMethod: "bank_transfer" | "upi" | "credit_terms"
   customerNotes?: string
+}
+
+export interface DeliverySettings {
+  id: string
+  productionLatitude: number
+  productionLongitude: number
+  deliveryCostPerKm: number
+  createdAt?: Date
+  updatedAt?: Date
+}
+
+export interface ContactMessage {
+  id: string
+  name: string
+  email: string
+  company?: string
+  phone?: string
+  subject: string
+  message: string
+  status: "new" | "replied"
+  adminReply?: string
+  repliedByAdminId?: string
+  repliedAt?: Date
+  createdAt: Date
+  updatedAt?: Date
 }
 
 export interface UpdateOrderStatusRequest {

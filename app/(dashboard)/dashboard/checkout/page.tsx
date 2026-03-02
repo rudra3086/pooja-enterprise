@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { CreditCard, Building2, Truck, ArrowLeft, CheckCircle, Package } from "lucide-react"
+import { CreditCard, Truck, ArrowLeft, CheckCircle, Package, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,6 +14,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Separator } from "@/components/ui/separator"
 import { useCart } from "@/lib/cart-context"
 import { useToast } from "@/hooks/use-toast"
+import { LocationPicker } from "@/components/map/location-picker"
+import type { DeliverySettings } from "@/lib/types"
 
 const paymentMethods = [
   { id: "bank_transfer", label: "Bank Transfer", description: "Direct bank transfer (NEFT/RTGS)" },
@@ -27,6 +29,9 @@ export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCart()
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentMethod, setPaymentMethod] = useState<"bank_transfer" | "upi" | "credit_terms">("bank_transfer")
+  const [requiresShipping, setRequiresShipping] = useState(true)
+  const [deliveryLocation, setDeliveryLocation] = useState<{ latitude: number; longitude: number } | undefined>(undefined)
+  const [deliverySettings, setDeliverySettings] = useState<DeliverySettings | null>(null)
   const [shippingInfo, setShippingInfo] = useState({
     name: "Business Name / Contact Person",
     address: "123 Business Park, Industrial Area",
@@ -61,11 +66,58 @@ export default function CheckoutPage() {
       }
     }
     fetchSession()
+
+    const fetchDeliverySettings = async () => {
+      try {
+        const response = await fetch("/api/delivery-settings")
+        const data = await response.json()
+        if (data.success && data.data) {
+          setDeliverySettings(data.data)
+        }
+      } catch (error) {
+        console.error("Failed to fetch delivery settings:", error)
+      }
+    }
+
+    fetchDeliverySettings()
   }, [])
 
   const gst = Math.round(totalPrice * 0.18)
-  const shippingAmount = totalPrice > 10000 ? 0 : 500
+  const distanceKm = requiresShipping && deliverySettings && deliveryLocation
+    ? calculateDistanceKm(
+        deliverySettings.productionLatitude,
+        deliverySettings.productionLongitude,
+        deliveryLocation.latitude,
+        deliveryLocation.longitude
+      )
+    : 0
+  const shippingAmount = requiresShipping && deliverySettings
+    ? Math.round(distanceKm * deliverySettings.deliveryCostPerKm)
+    : 0
   const grandTotal = totalPrice + gst + shippingAmount
+
+  function calculateDistanceKm(
+    originLatitude: number,
+    originLongitude: number,
+    destinationLatitude: number,
+    destinationLongitude: number
+  ) {
+    const toRadians = (degrees: number) => (degrees * Math.PI) / 180
+    const earthRadiusKm = 6371
+
+    const latitudeDifference = toRadians(destinationLatitude - originLatitude)
+    const longitudeDifference = toRadians(destinationLongitude - originLongitude)
+    const latitude1 = toRadians(originLatitude)
+    const latitude2 = toRadians(destinationLatitude)
+
+    const haversineA =
+      Math.sin(latitudeDifference / 2) * Math.sin(latitudeDifference / 2) +
+      Math.cos(latitude1) * Math.cos(latitude2) *
+      Math.sin(longitudeDifference / 2) * Math.sin(longitudeDifference / 2)
+
+    const haversineC = 2 * Math.atan2(Math.sqrt(haversineA), Math.sqrt(1 - haversineA))
+    return earthRadiusKm * haversineC
+  }
 
   if (items.length === 0) {
     return (
@@ -92,16 +144,48 @@ export default function CheckoutPage() {
   }
 
   const handlePlaceOrder = async () => {
+    if (!shippingInfo.name || !shippingInfo.phone) {
+      toast({
+        title: "Missing contact details",
+        description: "Please enter contact name and phone number.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (requiresShipping) {
+      if (!shippingInfo.address || !shippingInfo.city || !shippingInfo.state || !shippingInfo.pincode) {
+        toast({
+          title: "Missing shipping details",
+          description: "Please fill all shipping address fields.",
+          variant: "destructive",
+        })
+        return
+      }
+
+      if (!deliveryLocation) {
+        toast({
+          title: "Delivery location required",
+          description: "Please select delivery location on map.",
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
     setIsProcessing(true)
 
     try {
       const orderData = {
+        requiresShipping,
         shippingName: shippingInfo.name,
         shippingPhone: shippingInfo.phone,
         shippingAddressLine1: shippingInfo.address,
         shippingCity: shippingInfo.city,
         shippingState: shippingInfo.state,
         shippingPostalCode: shippingInfo.pincode,
+        deliveryLatitude: deliveryLocation?.latitude,
+        deliveryLongitude: deliveryLocation?.longitude,
         paymentMethod: paymentMethod,
         customerNotes: shippingInfo.notes,
         items: items.map(item => ({
@@ -184,10 +268,28 @@ export default function CheckoutPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Truck className="h-5 w-5" />
-                Shipping Details
+                Delivery Preferences
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <Label>Do you need shipping facility?</Label>
+                <RadioGroup
+                  value={requiresShipping ? "yes" : "no"}
+                  onValueChange={(value) => setRequiresShipping(value === "yes")}
+                  className="grid grid-cols-2 gap-3"
+                >
+                  <Label htmlFor="shipping-yes" className="flex items-center gap-2 rounded-md border border-border p-3 cursor-pointer">
+                    <RadioGroupItem id="shipping-yes" value="yes" />
+                    Yes, deliver to location
+                  </Label>
+                  <Label htmlFor="shipping-no" className="flex items-center gap-2 rounded-md border border-border p-3 cursor-pointer">
+                    <RadioGroupItem id="shipping-no" value="no" />
+                    No, self pickup
+                  </Label>
+                </RadioGroup>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="name">Business / Contact Name</Label>
                 <Input
@@ -199,52 +301,72 @@ export default function CheckoutPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="address">Street Address</Label>
-                <Textarea
-                  id="address"
-                  value={shippingInfo.address}
-                  onChange={(e) => setShippingInfo({ ...shippingInfo, address: e.target.value })}
-                  rows={2}
+                <Label htmlFor="phone">Phone Number</Label>
+                <Input
+                  id="phone"
+                  value={shippingInfo.phone}
+                  onChange={(e) => setShippingInfo({ ...shippingInfo, phone: e.target.value })}
                 />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="city">City</Label>
-                  <Input
-                    id="city"
-                    value={shippingInfo.city}
-                    onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="state">State</Label>
-                  <Input
-                    id="state"
-                    value={shippingInfo.state}
-                    onChange={(e) => setShippingInfo({ ...shippingInfo, state: e.target.value })}
-                  />
-                </div>
-              </div>
+              {requiresShipping && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Street Address</Label>
+                    <Textarea
+                      id="address"
+                      value={shippingInfo.address}
+                      onChange={(e) => setShippingInfo({ ...shippingInfo, address: e.target.value })}
+                      rows={2}
+                    />
+                  </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="pincode">Pincode</Label>
-                  <Input
-                    id="pincode"
-                    value={shippingInfo.pincode}
-                    onChange={(e) => setShippingInfo({ ...shippingInfo, pincode: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    value={shippingInfo.phone}
-                    onChange={(e) => setShippingInfo({ ...shippingInfo, phone: e.target.value })}
-                  />
-                </div>
-              </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="city">City</Label>
+                      <Input
+                        id="city"
+                        value={shippingInfo.city}
+                        onChange={(e) => setShippingInfo({ ...shippingInfo, city: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="state">State</Label>
+                      <Input
+                        id="state"
+                        value={shippingInfo.state}
+                        onChange={(e) => setShippingInfo({ ...shippingInfo, state: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="pincode">Pincode</Label>
+                    <Input
+                      id="pincode"
+                      value={shippingInfo.pincode}
+                      onChange={(e) => setShippingInfo({ ...shippingInfo, pincode: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Select Delivery Location on Map
+                    </Label>
+                    <LocationPicker
+                      value={deliveryLocation}
+                      onChange={setDeliveryLocation}
+                      heightClassName="h-64"
+                    />
+                    {deliveryLocation && deliverySettings && (
+                      <p className="text-xs text-muted-foreground">
+                        Distance: {distanceKm.toFixed(2)} km • Rate: ₹{deliverySettings.deliveryCostPerKm}/km
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Order Notes (Optional)</Label>
@@ -268,7 +390,10 @@ export default function CheckoutPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
+              <RadioGroup
+                value={paymentMethod}
+                onValueChange={(value) => setPaymentMethod(value as "bank_transfer" | "upi" | "credit_terms")}
+              >
                 {paymentMethods.map((method) => (
                   <div key={method.id} className="flex items-start space-x-3 py-3">
                     <RadioGroupItem value={method.id} id={method.id} className="mt-0.5" />
@@ -339,8 +464,12 @@ export default function CheckoutPage() {
 
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Shipping</span>
-                <span className={shippingAmount === 0 ? "text-green-600" : "text-foreground"}>
-                  {shippingAmount === 0 ? "Free" : `₹${shippingAmount}`}
+                <span className={!requiresShipping || shippingAmount === 0 ? "text-green-600" : "text-foreground"}>
+                  {!requiresShipping
+                    ? "Not required"
+                    : !deliveryLocation
+                      ? "Select location"
+                      : `₹${shippingAmount}`}
                 </span>
               </div>
 

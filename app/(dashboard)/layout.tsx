@@ -100,7 +100,7 @@ export default function DashboardLayout({
                       <Button
                         variant={isActive ? "secondary" : "ghost"}
                         size="sm"
-                        className={cn("gap-2", isActive && "bg-muted")}
+                        className={cn("gap-2", isActive && "bg-muted", !isActive && "hover:bg-black hover:text-white")}
                       >
                         <item.icon className="h-4 w-4" />
                         {item.label}
@@ -114,7 +114,7 @@ export default function DashboardLayout({
               <div className="flex items-center gap-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <div className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent text-sm font-medium">
+                    <div className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-md hover:bg-black hover:text-white text-sm font-medium">
                       <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
                         <User className="h-4 w-4" />
                       </div>
@@ -173,7 +173,7 @@ export default function DashboardLayout({
                       >
                         <Button
                           variant={isActive ? "secondary" : "ghost"}
-                          className={cn("w-full justify-start gap-2", isActive && "bg-muted")}
+                          className={cn("w-full justify-start gap-2", isActive && "bg-muted", !isActive && "hover:bg-black hover:text-white")}
                         >
                           <item.icon className="h-4 w-4" />
                           {item.label}

@@ -7,7 +7,9 @@ import {
   getOrCreateCart, 
   clearCart,
   getProductById,
-  getVariantById
+  getVariantById,
+  getDeliverySettings,
+  calculateDistanceKm
 } from "@/lib/db"
 import type { ApiResponse, Order, CreateOrderRequest, PaginatedResponse } from "@/lib/types"
 
@@ -80,6 +82,7 @@ export async function POST(request: NextRequest) {
 
     const body: CreateOrderRequest & { items?: any[] } = await request.json()
     const {
+      requiresShipping,
       shippingName,
       shippingPhone,
       shippingAddressLine1,
@@ -87,15 +90,33 @@ export async function POST(request: NextRequest) {
       shippingCity,
       shippingState,
       shippingPostalCode,
+      deliveryLatitude,
+      deliveryLongitude,
       paymentMethod,
       customerNotes,
       items: providedItems,
     } = body
 
+    const isShippingRequired = requiresShipping !== false
+
     // Validate required fields
-    if (!shippingName || !shippingPhone || !shippingAddressLine1 || !shippingCity || !shippingState || !shippingPostalCode) {
+    if (!shippingName || !shippingPhone) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: "Contact name and phone are required" },
+        { status: 400 }
+      )
+    }
+
+    if (isShippingRequired && (!shippingAddressLine1 || !shippingCity || !shippingState || !shippingPostalCode)) {
       return NextResponse.json<ApiResponse>(
         { success: false, error: "All shipping details are required" },
+        { status: 400 }
+      )
+    }
+
+    if (isShippingRequired && (deliveryLatitude === undefined || deliveryLongitude === undefined)) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: "Please select delivery location on map" },
         { status: 400 }
       )
     }
@@ -188,8 +209,20 @@ export async function POST(request: NextRequest) {
     // Calculate tax (18% GST)
     const taxAmount = subtotal * 0.18
 
-    // Calculate shipping (free for orders over 10000)
-    const shippingAmount = subtotal > 10000 ? 0 : 500
+    const deliverySettings = await getDeliverySettings()
+
+    let distanceKm = 0
+    let shippingAmount = 0
+
+    if (isShippingRequired) {
+      distanceKm = calculateDistanceKm(
+        deliverySettings.productionLatitude,
+        deliverySettings.productionLongitude,
+        Number(deliveryLatitude),
+        Number(deliveryLongitude)
+      )
+      shippingAmount = Math.round(distanceKm * deliverySettings.deliveryCostPerKm)
+    }
 
     const totalAmount = subtotal + taxAmount + shippingAmount
 
@@ -204,11 +237,18 @@ export async function POST(request: NextRequest) {
       totalAmount,
       shippingName,
       shippingPhone,
-      shippingAddressLine1,
+      shippingAddressLine1: isShippingRequired ? shippingAddressLine1 : (shippingAddressLine1 || "Self Pickup"),
       shippingAddressLine2,
-      shippingCity,
-      shippingState,
-      shippingPostalCode,
+      shippingCity: isShippingRequired ? shippingCity : (shippingCity || "N/A"),
+      shippingState: isShippingRequired ? shippingState : (shippingState || "N/A"),
+      shippingPostalCode: isShippingRequired ? shippingPostalCode : (shippingPostalCode || "000000"),
+      requiresShipping: isShippingRequired,
+      deliveryLatitude: isShippingRequired ? Number(deliveryLatitude) : undefined,
+      deliveryLongitude: isShippingRequired ? Number(deliveryLongitude) : undefined,
+      productionLatitude: isShippingRequired ? deliverySettings.productionLatitude : undefined,
+      productionLongitude: isShippingRequired ? deliverySettings.productionLongitude : undefined,
+      distanceKm: isShippingRequired ? distanceKm : undefined,
+      deliveryCostPerKm: isShippingRequired ? deliverySettings.deliveryCostPerKm : undefined,
       paymentMethod,
       customerNotes,
       items: orderItems,

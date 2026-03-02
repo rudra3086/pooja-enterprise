@@ -1,7 +1,11 @@
 -- Pooja Enterprise B2B Database Schema
 -- MySQL 8.0+
+-- WARNING: This file is for fresh setup and drops existing tables.
+-- For existing databases with live data, run scripts/migrate_existing_delivery_shipping.sql instead.
 
 -- Drop tables if they exist (in reverse order of dependencies)
+DROP TABLE IF EXISTS delivery_settings;
+DROP TABLE IF EXISTS contact_messages;
 DROP TABLE IF EXISTS order_items;
 DROP TABLE IF EXISTS orders;
 DROP TABLE IF EXISTS cart_items;
@@ -9,6 +13,7 @@ DROP TABLE IF EXISTS carts;
 DROP TABLE IF EXISTS product_variants;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS password_resets;
 DROP TABLE IF EXISTS clients;
 DROP TABLE IF EXISTS admins;
 DROP TABLE IF EXISTS sessions;
@@ -90,6 +95,26 @@ CREATE TABLE sessions (
     INDEX idx_token (token),
     INDEX idx_user (user_id, user_type),
     INDEX idx_expires (expires_at)
+);
+
+-- Contact messages
+CREATE TABLE contact_messages (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    company VARCHAR(255),
+    phone VARCHAR(20),
+    subject VARCHAR(255) NOT NULL,
+    message TEXT NOT NULL,
+    status ENUM('new', 'replied') DEFAULT 'new',
+    admin_reply TEXT,
+    replied_by_admin_id VARCHAR(36),
+    replied_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_status (status),
+    INDEX idx_created (created_at),
+    INDEX idx_email (email)
 );
 
 -- Password reset tokens
@@ -282,6 +307,15 @@ CREATE TABLE orders (
     shipping_state VARCHAR(100) NOT NULL,
     shipping_postal_code VARCHAR(20) NOT NULL,
     shipping_country VARCHAR(100) DEFAULT 'India',
+
+    -- Delivery Metadata
+    requires_shipping BOOLEAN NOT NULL DEFAULT TRUE,
+    delivery_latitude DECIMAL(10, 7) NULL,
+    delivery_longitude DECIMAL(10, 7) NULL,
+    production_latitude DECIMAL(10, 7) NULL,
+    production_longitude DECIMAL(10, 7) NULL,
+    distance_km DECIMAL(10, 2) NULL,
+    delivery_cost_per_km DECIMAL(10, 2) NULL,
     
     -- Notes
     customer_notes TEXT,
@@ -333,6 +367,19 @@ CREATE TABLE order_items (
     INDEX idx_order (order_id),
     INDEX idx_product (product_id)
 );
+
+-- Delivery settings
+CREATE TABLE delivery_settings (
+    id VARCHAR(36) PRIMARY KEY,
+    production_latitude DECIMAL(10, 7) NOT NULL,
+    production_longitude DECIMAL(10, 7) NOT NULL,
+    delivery_cost_per_km DECIMAL(10, 2) NOT NULL DEFAULT 12.00,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT INTO delivery_settings (id, production_latitude, production_longitude, delivery_cost_per_km) VALUES
+('default', 21.6338638, 73.0193249, 12.00);
 
 -- =====================================================
 -- SEED DATA

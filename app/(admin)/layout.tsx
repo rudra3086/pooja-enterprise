@@ -11,6 +11,7 @@ import {
   LayoutDashboard,
   ClipboardList,
   Package,
+  Mail,
   User,
   LogOut,
   Menu,
@@ -34,6 +35,7 @@ const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/orders", label: "Orders", icon: ClipboardList },
   { href: "/admin/products", label: "Products", icon: ShoppingBag },
+  { href: "/admin/messages", label: "Messages", icon: Mail },
   { href: "/admin/stock", label: "Stock", icon: Package },
 ]
 

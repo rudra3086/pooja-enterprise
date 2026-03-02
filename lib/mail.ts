@@ -1,14 +1,41 @@
 import nodemailer from "nodemailer"
 import type { Transporter } from "nodemailer"
 
+function extractEmailAddress(value?: string): string | undefined {
+  if (!value) return undefined
+  const trimmed = value.trim()
+  const match = trimmed.match(/<([^>]+)>/)
+  return (match?.[1] || trimmed).trim()
+}
+
+function getMailAuthUser(): string | undefined {
+  return process.env.MAIL_USER || extractEmailAddress(process.env.MAIL_FROM)
+}
+
+function getMailAuthPass(): string | undefined {
+  return process.env.MAIL_PASS || process.env.MAIL_PASSWORD
+}
+
 // Initialize transporter
-const transporter: Transporter = nodemailer.createTransport({
-  service: process.env.MAIL_SERVICE || "gmail",
-  auth: {
-    user: process.env.MAIL_FROM,
-    pass: process.env.MAIL_PASSWORD,
-  },
-})
+const transporterConfig = process.env.MAIL_HOST
+  ? {
+      host: process.env.MAIL_HOST,
+      port: parseInt(process.env.MAIL_PORT || "587", 10),
+      secure: process.env.MAIL_SECURE === "true",
+      auth: {
+        user: getMailAuthUser(),
+        pass: getMailAuthPass(),
+      },
+    }
+  : {
+      service: process.env.MAIL_SERVICE || "gmail",
+      auth: {
+        user: getMailAuthUser(),
+        pass: getMailAuthPass(),
+      },
+    }
+
+const transporter: Transporter = nodemailer.createTransport(transporterConfig)
 
 // Test connection on startup
 transporter.verify((error: Error | null, success: boolean) => {
@@ -26,19 +53,34 @@ export interface EmailOptions {
   text?: string
 }
 
-export async function sendEmail(options: EmailOptions): Promise<boolean> {
+export interface SendEmailResult {
+  success: boolean
+  error?: string
+  errorCode?: string
+}
+
+export async function sendEmailDetailed(options: EmailOptions): Promise<SendEmailResult> {
   try {
-    if (!process.env.MAIL_FROM || !process.env.MAIL_PASSWORD) {
+    const mailFrom = process.env.MAIL_FROM
+    const mailUser = getMailAuthUser()
+    const mailPass = getMailAuthPass()
+
+    if (!mailFrom || !mailUser || !mailPass) {
       console.error("❌ Email credentials missing:")
-      console.error("   MAIL_FROM:", process.env.MAIL_FROM ? "✓ Set" : "✗ Missing")
-      console.error("   MAIL_PASSWORD:", process.env.MAIL_PASSWORD ? "✓ Set" : "✗ Missing")
-      return false
+      console.error("   MAIL_FROM:", mailFrom ? "✓ Set" : "✗ Missing")
+      console.error("   MAIL_USER:", mailUser ? "✓ Set" : "✗ Missing")
+      console.error("   MAIL_PASS/MAIL_PASSWORD:", mailPass ? "✓ Set" : "✗ Missing")
+      return {
+        success: false,
+        error: "Mail configuration missing. Set MAIL_FROM, MAIL_USER (or valid MAIL_FROM), and MAIL_PASS (or MAIL_PASSWORD).",
+        errorCode: "MAIL_CONFIG_MISSING",
+      }
     }
 
     console.log(`📧 Sending email to: ${options.to}`)
     
     const info = await transporter.sendMail({
-      from: process.env.MAIL_FROM,
+      from: mailFrom,
       to: options.to,
       subject: options.subject,
       html: options.html,
@@ -46,16 +88,31 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
     })
 
     console.log(`✅ Email sent successfully! Message ID: ${info.messageId}`)
-    return true
+    return { success: true }
   } catch (error) {
-    const err = error as NodeJS.ErrnoException & { response?: string }
+    const err = error as NodeJS.ErrnoException & { response?: string; code?: string }
     console.error("❌ Error sending email:")
     console.error("   Error:", err?.message || String(error))
     if (err?.response) {
       console.error("   Response:", err.response)
     }
-    return false
+
+    const responseText = err?.response || ""
+    const authFailed = responseText.includes("BadCredentials") || responseText.includes("Username and Password not accepted")
+
+    return {
+      success: false,
+      error: authFailed
+        ? "SMTP authentication failed. For Gmail, use a 16-character App Password and set MAIL_USER to your Gmail address."
+        : err?.message || "Failed to send email",
+      errorCode: authFailed ? "MAIL_AUTH_FAILED" : err?.code || "MAIL_SEND_FAILED",
+    }
   }
+}
+
+export async function sendEmail(options: EmailOptions): Promise<boolean> {
+  const result = await sendEmailDetailed(options)
+  return result.success
 }
 
 export function getPasswordResetEmailHTML(

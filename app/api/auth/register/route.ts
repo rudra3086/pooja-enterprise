@@ -2,12 +2,24 @@ import { NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { getClientByEmail, createClient, getClientById } from "@/lib/db"
 import type { RegisterRequest, AuthResponse } from "@/lib/types"
+import {
+  sanitizeInput,
+  isValidEmail,
+  isValidPhone,
+  isValidIndianGstNumber,
+  normalizePhone,
+} from "@/lib/validation"
 
 // POST /api/auth/register - Client registration
 export async function POST(request: NextRequest) {
   try {
     const body: RegisterRequest = await request.json()
-    const { email, password, businessName, contactPerson, phone, gstNumber } = body
+    const email = sanitizeInput(body.email).toLowerCase()
+    const password = body.password
+    const businessName = sanitizeInput(body.businessName)
+    const contactPerson = sanitizeInput(body.contactPerson)
+    const phone = sanitizeInput(body.phone)
+    const gstNumber = sanitizeInput(body.gstNumber)
 
     // Validate required fields
     if (!email || !password || !businessName || !contactPerson || !phone) {
@@ -18,10 +30,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
+    if (!isValidEmail(email)) {
       return NextResponse.json<AuthResponse>(
         { success: false, message: "Invalid email format" },
+        { status: 400 }
+      )
+    }
+
+    if (!isValidPhone(phone)) {
+      return NextResponse.json<AuthResponse>(
+        { success: false, message: "Invalid phone number. Use 10 to 15 digits" },
+        { status: 400 }
+      )
+    }
+
+    if (gstNumber && !isValidIndianGstNumber(gstNumber)) {
+      return NextResponse.json<AuthResponse>(
+        { success: false, message: "Invalid GST number format" },
         { status: 400 }
       )
     }
@@ -52,8 +77,8 @@ export async function POST(request: NextRequest) {
       passwordHash,
       businessName,
       contactPerson,
-      phone,
-      gstNumber,
+      phone: normalizePhone(phone),
+      gstNumber: gstNumber || undefined,
     })
 
     // Fetch the created client

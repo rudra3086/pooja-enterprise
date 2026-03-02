@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { ClipboardList, Search, Filter, Eye, Package, X } from "lucide-react"
+import { ClipboardList, Search, Filter, Eye, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -25,18 +25,26 @@ import { Separator } from "@/components/ui/separator"
 interface OrderItem {
   id: string
   productName: string
+  productImageUrl?: string
   variantName?: string
   quantity: number
   unitPrice: number
   totalPrice: number
-  customization?: object
+  customization?: {
+    additionalCost?: number
+  }
 }
 
 interface Order {
   id: string
   orderNumber: string
   createdAt: string
+  deliveredAt?: string
   items: OrderItem[]
+  subtotal?: number
+  taxAmount?: number
+  shippingAmount?: number
+  discountAmount?: number
   totalAmount: number
   status: string
   paymentMethod: string
@@ -131,6 +139,22 @@ export default function OrdersPage() {
       order.shippingPostalCode,
     ]
     return parts.filter(Boolean).join(", ")
+  }
+
+  const calculateItemsSubtotal = (order: Order) => {
+    return (order.items || []).reduce((total, item) => total + item.unitPrice * item.quantity, 0)
+  }
+
+  const calculateCustomizationTotal = (order: Order) => {
+    return (order.items || []).reduce((total, item) => {
+      const explicitCustomizationCost = (item.customization?.additionalCost || 0) * item.quantity
+      if (explicitCustomizationCost > 0) {
+        return total + explicitCustomizationCost
+      }
+
+      const derivedCustomizationCost = item.totalPrice - item.unitPrice * item.quantity
+      return total + Math.max(0, derivedCustomizationCost)
+    }, 0)
   }
 
   if (loading) {
@@ -290,9 +314,9 @@ export default function OrdersPage() {
       <AnimatePresence>
         {selectedOrder && (
           <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
               <DialogHeader>
-                <DialogTitle className="flex items-center justify-between">
+                <DialogTitle className="flex flex-col gap-2 pr-10 sm:flex-row sm:items-center sm:justify-between">
                   <span className="font-serif text-xl">{selectedOrder.orderNumber}</span>
                   <Badge className={getStatusColor(selectedOrder.status)}>
                     {getStatusLabel(selectedOrder.status)}
@@ -300,7 +324,7 @@ export default function OrdersPage() {
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="space-y-6">
+              <div className="space-y-6 overflow-y-auto pr-1">
                 {/* Order Date */}
                 <div>
                   <p className="text-sm text-muted-foreground">
@@ -310,6 +334,15 @@ export default function OrdersPage() {
                       year: "numeric",
                     })}
                   </p>
+                  {selectedOrder.status === "delivered" && selectedOrder.deliveredAt && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Delivered on {new Date(selectedOrder.deliveredAt).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </p>
+                  )}
                 </div>
 
                 {/* Items */}
@@ -318,8 +351,16 @@ export default function OrdersPage() {
                   {(selectedOrder.items || []).map((item, index) => (
                     <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded bg-background flex items-center justify-center">
-                          <Package className="h-5 w-5 text-muted-foreground" />
+                        <div className="h-10 w-10 rounded bg-background flex items-center justify-center overflow-hidden">
+                          {item.productImageUrl ? (
+                            <img
+                              src={item.productImageUrl}
+                              alt={item.productName}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <Package className="h-5 w-5 text-muted-foreground" />
+                          )}
                         </div>
                         <div>
                           <p className="font-medium text-sm">
@@ -360,7 +401,38 @@ export default function OrdersPage() {
 
                 <Separator />
 
-                {/* Total */}
+                {/* Cost Breakdown */}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Items Subtotal</span>
+                    <span>₹{calculateItemsSubtotal(selectedOrder).toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Customization Cost</span>
+                    <span>₹{calculateCustomizationTotal(selectedOrder).toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Tax</span>
+                    <span>₹{(selectedOrder.taxAmount || 0).toLocaleString("en-IN")}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Shipping</span>
+                    <span>
+                      {(selectedOrder.shippingAmount || 0) === 0
+                        ? "Free"
+                        : `₹${(selectedOrder.shippingAmount || 0).toLocaleString("en-IN")}`}
+                    </span>
+                  </div>
+                  {(selectedOrder.discountAmount || 0) > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Discount</span>
+                      <span>-₹{(selectedOrder.discountAmount || 0).toLocaleString("en-IN")}</span>
+                    </div>
+                  )}
+                </div>
+
+                <Separator />
+
                 <div className="flex justify-between items-center">
                   <span className="font-medium">Total</span>
                   <span className="text-xl font-semibold">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Filter, Eye, Package, Download } from "lucide-react"
+import { Search, Filter, Eye, Package, Download, MapPin } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -325,8 +325,16 @@ export default function AdminOrdersPage() {
                       <div key={index} className="rounded-lg bg-muted p-4 space-y-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded bg-background flex items-center justify-center">
-                              <Package className="h-5 w-5 text-muted-foreground" />
+                            <div className="h-10 w-10 rounded bg-background flex items-center justify-center overflow-hidden">
+                              {item.productImageUrl ? (
+                                <img
+                                  src={item.productImageUrl}
+                                  alt={item.productName}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <Package className="h-5 w-5 text-muted-foreground" />
+                              )}
                             </div>
                             <div>
                               <p className="font-medium text-sm">
@@ -429,15 +437,34 @@ export default function AdminOrdersPage() {
                 {/* Shipping Address */}
                 <div>
                   <h4 className="font-medium mb-2">Shipping Address</h4>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedOrder.shippingName}<br />
-                    {selectedOrder.shippingPhone}<br />
-                    {selectedOrder.shippingAddressLine1}<br />
-                    {selectedOrder.shippingAddressLine2 && <>{selectedOrder.shippingAddressLine2}<br /></>}
-                    {selectedOrder.shippingCity}, {selectedOrder.shippingState} {selectedOrder.shippingPostalCode}<br />
-                    {selectedOrder.shippingCountry}
-                  </p>
+                  {!selectedOrder.requiresShipping ? (
+                    <p className="text-sm text-muted-foreground">Customer selected self pickup (shipping not required).</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {selectedOrder.shippingName}<br />
+                      {selectedOrder.shippingPhone}<br />
+                      {selectedOrder.shippingAddressLine1}<br />
+                      {selectedOrder.shippingAddressLine2 && <>{selectedOrder.shippingAddressLine2}<br /></>}
+                      {selectedOrder.shippingCity}, {selectedOrder.shippingState} {selectedOrder.shippingPostalCode}<br />
+                      {selectedOrder.shippingCountry}
+                    </p>
+                  )}
                 </div>
+
+                {selectedOrder.requiresShipping && (
+                  <div>
+                    <h4 className="font-medium mb-2 flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Delivery Distance
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      Distance: {selectedOrder.distanceKm?.toFixed(2) || "0.00"} km<br />
+                      Cost per km: ₹{selectedOrder.deliveryCostPerKm?.toFixed(2) || "0.00"}<br />
+                      Delivery point: {selectedOrder.deliveryLatitude?.toFixed(6)}, {selectedOrder.deliveryLongitude?.toFixed(6)}<br />
+                      Production point: {selectedOrder.productionLatitude?.toFixed(6)}, {selectedOrder.productionLongitude?.toFixed(6)}
+                    </p>
+                  </div>
+                )}
 
                 {/* Payment */}
                 <div>
