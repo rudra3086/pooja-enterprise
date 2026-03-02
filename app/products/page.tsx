@@ -105,7 +105,7 @@ export default function ProductsPage() {
                     key={product.id}
                     id={product.id}
                     variants={itemVariants}
-                    className="group relative overflow-hidden rounded-2xl bg-white border border-border/40 transition-all duration-300 hover:shadow-lg dark:bg-accent/10 dark:border-accent/20"
+                    className="group relative overflow-hidden rounded-2xl bg-white border border-border/40 transition-all duration-300 hover:shadow-lg dark:bg-card dark:border-border"
                   >
                     <div className="flex flex-col lg:flex-row items-stretch h-full">
                       {/* Product Image */}
