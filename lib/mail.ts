@@ -9,11 +9,25 @@ function extractEmailAddress(value?: string): string | undefined {
 }
 
 function getMailAuthUser(): string | undefined {
-  return process.env.MAIL_USER || extractEmailAddress(process.env.MAIL_FROM)
+  const user = process.env.MAIL_USER || extractEmailAddress(process.env.MAIL_FROM)
+  return user?.trim()
 }
 
 function getMailAuthPass(): string | undefined {
-  return process.env.MAIL_PASS || process.env.MAIL_PASSWORD
+  const rawPass = process.env.MAIL_PASS || process.env.MAIL_PASSWORD
+  if (!rawPass) return undefined
+
+  const trimmed = rawPass.trim()
+  const service = (process.env.MAIL_SERVICE || "").toLowerCase()
+  const host = (process.env.MAIL_HOST || "").toLowerCase()
+  const isGmail = service === "gmail" || host.includes("gmail")
+
+  // Gmail app passwords are often copied as "abcd efgh ijkl mnop"
+  if (isGmail) {
+    return trimmed.replace(/\s+/g, "")
+  }
+
+  return trimmed
 }
 
 // Initialize transporter
@@ -77,7 +91,20 @@ export async function sendEmailDetailed(options: EmailOptions): Promise<SendEmai
       }
     }
 
+    const service = (process.env.MAIL_SERVICE || "").toLowerCase()
+    const host = (process.env.MAIL_HOST || "").toLowerCase()
+    const isGmail = service === "gmail" || host.includes("gmail")
+
+    if (isGmail && mailPass.length !== 16) {
+      return {
+        success: false,
+        error: "Gmail requires a 16-character App Password (not your account password). Set MAIL_PASS to the app password from Google Account > Security > App passwords.",
+        errorCode: "MAIL_GMAIL_APP_PASSWORD_REQUIRED",
+      }
+    }
+
     console.log(`📧 Sending email to: ${options.to}`)
+    console.log(`✉️ SMTP auth user: ${mailUser}`)
     
     const info = await transporter.sendMail({
       from: mailFrom,
@@ -103,7 +130,7 @@ export async function sendEmailDetailed(options: EmailOptions): Promise<SendEmai
     return {
       success: false,
       error: authFailed
-        ? "SMTP authentication failed. For Gmail, use a 16-character App Password and set MAIL_USER to your Gmail address."
+        ? "SMTP authentication failed. For Gmail: enable 2-Step Verification, generate a 16-character App Password, set MAIL_USER to your Gmail address, and use MAIL_PASS (spaces are okay; they will be normalized)."
         : err?.message || "Failed to send email",
       errorCode: authFailed ? "MAIL_AUTH_FAILED" : err?.code || "MAIL_SEND_FAILED",
     }

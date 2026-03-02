@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { Mail, Reply, Clock } from "lucide-react"
+import { Mail, Reply, Clock, Trash2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +28,8 @@ export default function AdminMessagesPage() {
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null)
   const [replyText, setReplyText] = useState("")
   const [replying, setReplying] = useState(false)
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null)
+  const [bulkDeleting, setBulkDeleting] = useState<"all" | "replied" | null>(null)
 
   const fetchMessages = async () => {
     try {
@@ -99,6 +101,58 @@ export default function AdminMessagesPage() {
     }
   }
 
+  const handleDeleteMessage = async (messageId: string) => {
+    const confirmed = window.confirm("Delete this inquiry permanently?")
+    if (!confirmed) return
+
+    try {
+      setDeletingMessageId(messageId)
+      const response = await fetch(`/api/admin/contact/${messageId}`, {
+        method: "DELETE",
+      })
+      const data = await response.json()
+
+      if (data.success) {
+        setMessages((prev) => prev.filter((message) => message.id !== messageId))
+        toast({ title: "Inquiry deleted", description: "The inquiry has been removed." })
+      } else {
+        toast({ title: "Error", description: data.error || "Failed to delete inquiry", variant: "destructive" })
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to delete inquiry", variant: "destructive" })
+    } finally {
+      setDeletingMessageId(null)
+    }
+  }
+
+  const handleBulkDelete = async (scope: "all" | "replied") => {
+    const label = scope === "all" ? "all inquiries" : "all replied inquiries"
+    const confirmed = window.confirm(`Delete ${label} permanently?`)
+    if (!confirmed) return
+
+    try {
+      setBulkDeleting(scope)
+      const response = await fetch(`/api/admin/contact?scope=${scope}`, {
+        method: "DELETE",
+      })
+      const data = await response.json()
+
+      if (data.success) {
+        toast({
+          title: "Cleanup completed",
+          description: `${data.data?.deletedCount ?? 0} inquiry(s) deleted.`,
+        })
+        fetchMessages()
+      } else {
+        toast({ title: "Error", description: data.error || "Failed to delete inquiries", variant: "destructive" })
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to delete inquiries", variant: "destructive" })
+    } finally {
+      setBulkDeleting(null)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
@@ -122,6 +176,27 @@ export default function AdminMessagesPage() {
             <SelectItem value="replied">Replied</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <Button
+          variant="outline"
+          className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+          onClick={() => handleBulkDelete("replied")}
+          disabled={bulkDeleting !== null || loading}
+        >
+          <Trash2 className="h-4 w-4" />
+          {bulkDeleting === "replied" ? "Deleting..." : "Delete Replied Inquiries"}
+        </Button>
+        <Button
+          variant="outline"
+          className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+          onClick={() => handleBulkDelete("all")}
+          disabled={bulkDeleting !== null || loading}
+        >
+          <Trash2 className="h-4 w-4" />
+          {bulkDeleting === "all" ? "Deleting..." : "Delete All Inquiries"}
+        </Button>
       </div>
 
       {loading ? (
@@ -154,17 +229,31 @@ export default function AdminMessagesPage() {
 
                 <div className="rounded-md bg-muted p-3 text-sm">{message.message}</div>
 
-                {message.adminReply ? (
+                {message.adminReply && (
                   <div className="rounded-md border border-border p-3 text-sm">
                     <p className="font-medium mb-1">Reply Sent:</p>
                     <p>{message.adminReply}</p>
                   </div>
-                ) : (
-                  <Button size="sm" className="gap-2" onClick={() => { setSelectedMessage(message); setReplyText("") }}>
-                    <Reply className="h-4 w-4" />
-                    Reply
-                  </Button>
                 )}
+
+                <div className="flex flex-wrap gap-2">
+                  {!message.adminReply && (
+                    <Button size="sm" className="gap-2" onClick={() => { setSelectedMessage(message); setReplyText("") }}>
+                      <Reply className="h-4 w-4" />
+                      Reply
+                    </Button>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    onClick={() => handleDeleteMessage(message.id)}
+                    disabled={deletingMessageId === message.id}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {deletingMessageId === message.id ? "Deleting..." : "Delete"}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

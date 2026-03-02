@@ -107,14 +107,14 @@ export default function ProductsPage() {
                     variants={itemVariants}
                     className="group relative overflow-hidden rounded-2xl bg-card border border-border transition-all duration-300 hover:shadow-lg"
                   >
-                    <div className="flex flex-col lg:flex-row">
+                    <div className="flex flex-col lg:flex-row items-stretch h-full">
                       {/* Product Image */}
-                      <div className="aspect-square lg:aspect-auto lg:w-1/2 bg-muted relative overflow-hidden">
+                      <div className="relative h-72 sm:h-80 lg:h-auto lg:min-h-full lg:w-1/2 lg:self-stretch bg-muted overflow-hidden">
                         <Image
                           src={product.image || "/placeholder.svg"}
                           alt={product.name}
                           fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          className="object-cover object-center transition-transform duration-500 group-hover:scale-105"
                         />
                         {product.customizable && (
                           <span className="absolute top-4 left-4 inline-flex items-center rounded-full bg-accent px-3 py-1 text-xs font-medium text-accent-foreground">

@@ -22,6 +22,7 @@ interface DashboardData {
   totalSpent: number
   recentOrders: Array<{
     id: string
+    orderId: string
     date: string
     items: string
     total: number
@@ -287,7 +288,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <div className="font-semibold">₹{order.total.toLocaleString("en-IN")}</div>
-                      <Link href="/dashboard/orders">
+                      <Link href={`/dashboard/orders?orderId=${order.orderId}`}>
                         <Button variant="ghost" size="sm" className="mt-1">
                           View Details
                         </Button>

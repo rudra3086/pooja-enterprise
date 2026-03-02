@@ -28,11 +28,13 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: '/icon-light-32x32.png',
+        url: '/icon-light.svg',
+        type: 'image/svg+xml',
         media: '(prefers-color-scheme: light)',
       },
       {
-        url: '/icon-dark-32x32.png',
+        url: '/icon-dark.svg',
+        type: 'image/svg+xml',
         media: '(prefers-color-scheme: dark)',
       },
       {

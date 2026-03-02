@@ -57,6 +57,7 @@ export async function GET(request: NextRequest) {
     // Get recent 5 orders
     const recentOrders = orders.slice(0, 5).map(order => ({
       id: order.orderNumber,
+      orderId: order.id,
       date: order.createdAt,
       items: (order.items || []).map(item => `${item.productName}${item.variantName ? ` (${item.variantName})` : ''} (${item.quantity} units)`).join(", "),
       total: order.totalAmount,

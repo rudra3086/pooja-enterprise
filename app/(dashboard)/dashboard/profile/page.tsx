@@ -32,16 +32,31 @@ export default function ProfilePage() {
           const data = await response.json()
           if (data.user) {
             const user = data.user
-            // Map database fields to profile fields
-            const fullAddress = [
-              user.addressLine1,
+            // Map database fields to profile fields (avoid duplicate country append)
+            const normalizedAddressLine1 = (user.addressLine1 || "").trim()
+            const normalizedCountry = (user.country || "").trim()
+
+            const addressParts = [
+              normalizedAddressLine1,
               user.addressLine2,
               user.city,
               user.state,
               user.postalCode,
-              user.country,
+              normalizedCountry &&
+              normalizedAddressLine1.toLowerCase().includes(normalizedCountry.toLowerCase())
+                ? ""
+                : normalizedCountry,
             ]
-              .filter(Boolean)
+              .filter((part) => !!part)
+              .map((part) => String(part).trim())
+
+            const fullAddress = addressParts
+              .filter((part, index) => {
+                const lowerPart = part.toLowerCase()
+                return !addressParts
+                  .slice(0, index)
+                  .some((existing) => existing.toLowerCase() === lowerPart)
+              })
               .join(", ")
 
             setProfile({

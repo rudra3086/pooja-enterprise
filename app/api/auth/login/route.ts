@@ -10,7 +10,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key-change-in-producti
 export async function POST(request: NextRequest) {
   try {
     const body: LoginRequest = await request.json()
-    const { email, password } = body
+    const { email, password, rememberMe } = body
 
     if (!email || !password) {
       return NextResponse.json<AuthResponse>(
@@ -46,16 +46,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const sessionDays = rememberMe ? 30 : 7
+
     // Generate JWT token
     const token = jwt.sign(
       { userId: client.id, type: "client" },
       JWT_SECRET,
-      { expiresIn: "7d" }
+      { expiresIn: `${sessionDays}d` }
     )
 
     // Create session in database
     const expiresAt = new Date()
-    expiresAt.setDate(expiresAt.getDate() + 7) // 7 days
+    expiresAt.setDate(expiresAt.getDate() + sessionDays)
 
     await createSession({
       userId: client.id,
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * sessionDays,
       path: "/",
     })
 

@@ -1276,6 +1276,7 @@ async function ensureDeliverySchema(): Promise<void> {
         "ALTER TABLE orders ADD COLUMN production_longitude DECIMAL(10, 7) NULL",
         "ALTER TABLE orders ADD COLUMN distance_km DECIMAL(10, 2) NULL",
         "ALTER TABLE orders ADD COLUMN delivery_cost_per_km DECIMAL(10, 2) NULL",
+        "ALTER TABLE orders ADD COLUMN admin_hidden_at TIMESTAMP NULL",
       ]
 
       for (const statement of alterStatements) {
@@ -1595,6 +1596,32 @@ export async function replyToContactMessage(
   return await getContactMessageById(messageId)
 }
 
+export async function deleteContactMessageById(id: string): Promise<boolean> {
+  await ensureContactSchema()
+  const result = await execute(
+    `DELETE FROM contact_messages WHERE id = ?`,
+    [id]
+  )
+  return result.affectedRows > 0
+}
+
+export async function deleteContactMessages(options?: {
+  status?: "new" | "replied"
+}): Promise<number> {
+  await ensureContactSchema()
+
+  if (options?.status) {
+    const result = await execute(
+      `DELETE FROM contact_messages WHERE status = ?`,
+      [options.status]
+    )
+    return result.affectedRows
+  }
+
+  const result = await execute(`DELETE FROM contact_messages`)
+  return result.affectedRows
+}
+
 // =====================================================
 // ORDER FUNCTIONS
 // =====================================================
@@ -1875,6 +1902,8 @@ export async function getOrders(options?: {
   clientId?: string
   status?: string
   search?: string
+  excludeAdminHidden?: boolean
+  onlyAdminHidden?: boolean
   limit?: number
   offset?: number
 }): Promise<{ orders: Order[]; total: number }> {
@@ -1895,6 +1924,12 @@ export async function getOrders(options?: {
   if (options?.search) {
     whereClause += " AND o.order_number LIKE ?"
     params.push(`%${options.search}%`)
+  }
+
+  if (options?.onlyAdminHidden) {
+    whereClause += " AND o.admin_hidden_at IS NOT NULL"
+  } else if (options?.excludeAdminHidden) {
+    whereClause += " AND o.admin_hidden_at IS NULL"
   }
 
   const countRows = await query<RowDataPacket[]>(
@@ -2086,6 +2121,53 @@ export async function updateOrderStatus(
     `UPDATE orders SET ${setClauses.join(", ")}, updated_at = NOW() WHERE id = ?`,
     params
   )
+  return result.affectedRows > 0
+}
+
+export async function deleteOrderById(orderId: string): Promise<boolean> {
+  await ensureDeliverySchema()
+  const result = await execute(
+    `UPDATE orders
+     SET admin_hidden_at = NOW(), updated_at = NOW()
+     WHERE id = ? AND admin_hidden_at IS NULL`,
+    [orderId]
+  )
+
+  return result.affectedRows > 0
+}
+
+export async function deleteOrders(options?: {
+  status?: Order["status"]
+}): Promise<number> {
+  await ensureDeliverySchema()
+
+  if (options?.status) {
+    const result = await execute(
+      `UPDATE orders
+       SET admin_hidden_at = NOW(), updated_at = NOW()
+       WHERE status = ? AND admin_hidden_at IS NULL`,
+      [options.status]
+    )
+    return result.affectedRows
+  }
+
+  const result = await execute(
+    `UPDATE orders
+     SET admin_hidden_at = NOW(), updated_at = NOW()
+     WHERE admin_hidden_at IS NULL`
+  )
+  return result.affectedRows
+}
+
+export async function restoreOrderById(orderId: string): Promise<boolean> {
+  await ensureDeliverySchema()
+  const result = await execute(
+    `UPDATE orders
+     SET admin_hidden_at = NULL, updated_at = NOW()
+     WHERE id = ? AND admin_hidden_at IS NOT NULL`,
+    [orderId]
+  )
+
   return result.affectedRows > 0
 }
 

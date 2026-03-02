@@ -54,9 +54,20 @@ export async function POST(request: NextRequest) {
       [email, userType, token, tokenHash, expiresAt]
     )
 
-    // In production, you would send an email here
-    // For now, we'll log the reset link for testing
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+    const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim()
+    const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim()
+    const host = forwardedHost || request.headers.get("host")
+
+    const requestBaseUrl = host
+      ? `${forwardedProto || (host.includes("localhost") ? "http" : "https")}://${host}`
+      : request.nextUrl.origin
+
+    const configuredBaseUrl = process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_BASE_URL
+    const baseUrl =
+      configuredBaseUrl && !configuredBaseUrl.includes("localhost")
+        ? configuredBaseUrl
+        : requestBaseUrl || configuredBaseUrl || "http://localhost:3000"
+
     const resetPath = userType === "client" ? "reset-password" : "admin/reset-password"
     const resetLink = `${baseUrl}/${resetPath}?token=${token}&email=${encodeURIComponent(email)}`
 

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Search, Filter, Eye, Package, Download, MapPin } from "lucide-react"
+import { Search, Filter, Eye, Package, Download, MapPin, Trash2, RotateCcw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -54,14 +54,18 @@ export default function AdminOrdersPage() {
   const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [viewMode, setViewMode] = useState<"active" | "removed">("active")
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null)
+  const [restoringOrderId, setRestoringOrderId] = useState<string | null>(null)
+  const [bulkDeleting, setBulkDeleting] = useState<"delivered" | "cancelled" | null>(null)
 
   useEffect(() => {
     fetchOrders()
-  }, [statusFilter])
+  }, [statusFilter, viewMode])
 
   const fetchOrders = async () => {
     try {
@@ -70,6 +74,7 @@ export default function AdminOrdersPage() {
       if (statusFilter !== "all") {
         params.append("status", statusFilter)
       }
+      params.append("view", viewMode)
       params.append("pageSize", "100") // Get more orders for admin view
 
       const response = await fetch(`/api/admin/orders?${params}`)
@@ -147,6 +152,90 @@ export default function AdminOrdersPage() {
     }
   }
 
+  const handleDeleteOrder = async (orderId: string, orderNumber: string) => {
+    const confirmed = window.confirm(`Remove order ${orderNumber} from admin UI?`)
+    if (!confirmed) return
+
+    try {
+      setDeletingOrderId(orderId)
+      const response = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "DELETE",
+      })
+      const data = await response.json()
+
+      if (data.success) {
+        setOrders((prev) => prev.filter((order) => order.id !== orderId))
+        if (selectedOrder?.id === orderId) {
+          setSelectedOrder(null)
+        }
+        toast({ title: "Order removed", description: `${orderNumber} has been removed from admin UI.` })
+      } else {
+        toast({ title: "Error", description: data.error || "Failed to delete order", variant: "destructive" })
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to delete order", variant: "destructive" })
+    } finally {
+      setDeletingOrderId(null)
+    }
+  }
+
+  const handleBulkDelete = async (scope: "delivered" | "cancelled") => {
+    const label = scope === "delivered" ? "all delivered orders" : "all cancelled orders"
+    const confirmed = window.confirm(`Remove ${label} from admin UI?`)
+    if (!confirmed) return
+
+    try {
+      setBulkDeleting(scope)
+      const response = await fetch(`/api/admin/orders?scope=${scope}`, {
+        method: "DELETE",
+      })
+      const data = await response.json()
+
+      if (data.success) {
+        toast({
+          title: "Cleanup completed",
+          description: `${data.data?.deletedCount ?? 0} order(s) removed from admin UI.`,
+        })
+        fetchOrders()
+      } else {
+        toast({ title: "Error", description: data.error || "Failed to delete orders", variant: "destructive" })
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to delete orders", variant: "destructive" })
+    } finally {
+      setBulkDeleting(null)
+    }
+  }
+
+  const canRemoveOrder = (order: Order) =>
+    order.status === "delivered" || order.status === "cancelled"
+
+  const getGoogleMapsUrl = (latitude?: number, longitude?: number) => {
+    if (latitude === undefined || longitude === undefined) return null
+    return `https://www.google.com/maps?q=${latitude},${longitude}`
+  }
+
+  const handleRestoreOrder = async (orderId: string, orderNumber: string) => {
+    try {
+      setRestoringOrderId(orderId)
+      const response = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "POST",
+      })
+      const data = await response.json()
+
+      if (data.success) {
+        setOrders((prev) => prev.filter((order) => order.id !== orderId))
+        toast({ title: "Order restored", description: `${orderNumber} is visible in active orders again.` })
+      } else {
+        toast({ title: "Error", description: data.error || "Failed to restore order", variant: "destructive" })
+      }
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to restore order", variant: "destructive" })
+    } finally {
+      setRestoringOrderId(null)
+    }
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -192,7 +281,39 @@ export default function AdminOrdersPage() {
             <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={viewMode} onValueChange={(value) => setViewMode(value as "active" | "removed") }>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="View" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active Orders</SelectItem>
+            <SelectItem value="removed">Removed Orders</SelectItem>
+          </SelectContent>
+        </Select>
       </motion.div>
+
+      {viewMode === "active" && (
+        <div className="flex flex-wrap gap-3">
+          <Button
+            variant="outline"
+            className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+            onClick={() => handleBulkDelete("delivered")}
+            disabled={bulkDeleting !== null || loading}
+          >
+            <Trash2 className="h-4 w-4" />
+            {bulkDeleting === "delivered" ? "Deleting..." : "Delete Delivered"}
+          </Button>
+          <Button
+            variant="outline"
+            className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+            onClick={() => handleBulkDelete("cancelled")}
+            disabled={bulkDeleting !== null || loading}
+          >
+            <Trash2 className="h-4 w-4" />
+            {bulkDeleting === "cancelled" ? "Deleting..." : "Delete Cancelled"}
+          </Button>
+        </div>
+      )}
 
       {/* Orders Table */}
       <motion.div
@@ -274,15 +395,41 @@ export default function AdminOrdersPage() {
                           </Select>
                         </td>
                         <td className="p-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="gap-2"
-                            onClick={() => setSelectedOrder(order)}
-                          >
-                            <Eye className="h-4 w-4" />
-                            View
-                          </Button>
+                          <div className="flex flex-wrap items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="gap-2"
+                              onClick={() => setSelectedOrder(order)}
+                            >
+                              <Eye className="h-4 w-4" />
+                              View
+                            </Button>
+                            {viewMode === "active" && canRemoveOrder(order) && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="gap-2 text-red-600 hover:text-red-700"
+                                onClick={() => handleDeleteOrder(order.id, order.orderNumber)}
+                                disabled={deletingOrderId === order.id}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                                {deletingOrderId === order.id ? "Deleting..." : "Delete"}
+                              </Button>
+                            )}
+                            {viewMode === "removed" && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="gap-2 text-green-700 hover:text-green-800"
+                                onClick={() => handleRestoreOrder(order.id, order.orderNumber)}
+                                disabled={restoringOrderId === order.id}
+                              >
+                                <RotateCcw className="h-4 w-4" />
+                                {restoringOrderId === order.id ? "Restoring..." : "Restore"}
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -299,8 +446,8 @@ export default function AdminOrdersPage() {
         {selectedOrder && (
           <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
             <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle className="flex items-center justify-between">
+              <DialogHeader className="pr-10">
+                <DialogTitle className="flex flex-wrap items-center gap-2">
                   <span className="font-serif text-xl">{selectedOrder.orderNumber}</span>
                   <Badge className={statusColors[selectedOrder.status]}>
                     {statusLabels[selectedOrder.status]}
@@ -457,12 +604,32 @@ export default function AdminOrdersPage() {
                       <MapPin className="h-4 w-4" />
                       Delivery Distance
                     </h4>
+                    {(() => {
+                      const deliveryMapsUrl = getGoogleMapsUrl(
+                        selectedOrder.deliveryLatitude,
+                        selectedOrder.deliveryLongitude
+                      )
+
+                      return (
                     <p className="text-sm text-muted-foreground">
                       Distance: {selectedOrder.distanceKm?.toFixed(2) || "0.00"} km<br />
                       Cost per km: ₹{selectedOrder.deliveryCostPerKm?.toFixed(2) || "0.00"}<br />
-                      Delivery point: {selectedOrder.deliveryLatitude?.toFixed(6)}, {selectedOrder.deliveryLongitude?.toFixed(6)}<br />
+                      Delivery point: {deliveryMapsUrl ? (
+                        <a
+                          href={deliveryMapsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline underline-offset-2 text-primary hover:text-primary/80"
+                        >
+                          {selectedOrder.deliveryLatitude?.toFixed(6)}, {selectedOrder.deliveryLongitude?.toFixed(6)}
+                        </a>
+                      ) : (
+                        <>{selectedOrder.deliveryLatitude?.toFixed(6)}, {selectedOrder.deliveryLongitude?.toFixed(6)}</>
+                      )}<br />
                       Production point: {selectedOrder.productionLatitude?.toFixed(6)}, {selectedOrder.productionLongitude?.toFixed(6)}
                     </p>
+                      )
+                    })()}
                   </div>
                 )}
 
