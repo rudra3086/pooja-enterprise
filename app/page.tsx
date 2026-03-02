@@ -285,7 +285,7 @@ export default function HomePage() {
                     viewport={{ margin: "-50px", once: false }}
                     whileHover={{ y: -8 }}
                     transition={{ duration: 0.1 }}
-                    className="group relative rounded-xl bg-card p-6 shadow-sm border border-border transition-all duration-300 hover:shadow-lg hover:border-primary/30"
+                    className="group relative rounded-xl bg-card p-6 shadow-sm border border-border transition-all duration-300 hover:shadow-lg hover:border-primary/30 dark:bg-accent/10 dark:border-accent/20"
                   >
                     <motion.div
                       initial={{ scale: 1 }}
@@ -380,7 +380,7 @@ export default function HomePage() {
                       y: -12,
                       boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
                     }}
-                    className="group relative overflow-hidden rounded-xl bg-card border border-border/40 transition-all duration-300 hover:border-primary/20"
+                    className="group relative overflow-hidden rounded-xl bg-card border border-border/40 transition-all duration-300 hover:border-primary/20 dark:bg-accent/10 dark:border-accent/20"
                     style={{
                       boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.08)",
                     }}

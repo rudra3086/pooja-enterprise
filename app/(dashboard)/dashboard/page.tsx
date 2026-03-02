@@ -257,7 +257,7 @@ export default function DashboardPage() {
                 {data.recentOrders.map((order) => (
                   <div
                     key={order.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg border border-border"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg border border-border bg-muted/40"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
