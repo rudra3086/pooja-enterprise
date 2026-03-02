@@ -52,13 +52,15 @@ const transporterConfig = process.env.MAIL_HOST
 const transporter: Transporter = nodemailer.createTransport(transporterConfig)
 
 // Test connection on startup
-transporter.verify((error: Error | null, success: boolean) => {
-  if (error) {
-    console.error("❌ Email service error:", error.message)
-  } else if (success) {
-    console.log("✅ Email service ready!")
-  }
-})
+if (getMailAuthUser() && getMailAuthPass()) {
+  transporter.verify((error: Error | null, success: boolean) => {
+    if (error) {
+      console.error("❌ Email service error:", error.message)
+    } else if (success) {
+      console.log("✅ Email service ready!")
+    }
+  })
+}
 
 export interface EmailOptions {
   to: string

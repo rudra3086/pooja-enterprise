@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
 import { motion } from "framer-motion"
@@ -16,11 +16,9 @@ import { Toaster } from "@/components/ui/toaster"
 
 export default function ResetPasswordPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { toast } = useToast()
-  
-  const token = searchParams.get("token")
-  const email = searchParams.get("email")
+  const [token, setToken] = useState<string | null>(null)
+  const [email, setEmail] = useState<string | null>(null)
   
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
@@ -33,6 +31,12 @@ export default function ResetPasswordPage() {
     password: "",
     confirmPassword: "",
   })
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setToken(params.get("token"))
+    setEmail(params.get("email"))
+  }, [])
 
   // Validate token on mount
   useEffect(() => {

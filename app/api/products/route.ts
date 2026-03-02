@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { getProducts, getCategoryBySlug, getCategoryById } from "@/lib/db"
 import type { ApiResponse, Product, PaginatedResponse } from "@/lib/types"
 
+export const dynamic = "force-dynamic"
+
 // GET /api/products - Get all products with optional filters
 export async function GET(request: NextRequest) {
   try {

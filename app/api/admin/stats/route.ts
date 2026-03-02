@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { getSessionByToken, getDashboardStats, getOrders } from "@/lib/db"
 import type { ApiResponse } from "@/lib/types"
 
+export const dynamic = "force-dynamic"
+
 interface DashboardStats {
   totalRevenue: number
   totalOrders: number

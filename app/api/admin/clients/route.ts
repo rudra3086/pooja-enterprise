@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { getSessionByToken, getClients } from "@/lib/db"
 import type { ApiResponse, Client, PaginatedResponse } from "@/lib/types"
 
+export const dynamic = "force-dynamic"
+
 interface ClientWithStats extends Client {
   totalOrders: number
   totalSpent: number

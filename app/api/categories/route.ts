@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { getCategories } from "@/lib/db"
 import type { ApiResponse, Category } from "@/lib/types"
 
+export const dynamic = "force-dynamic"
+
 // GET /api/categories - Get all categories
 export async function GET() {
   try {

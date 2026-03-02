@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { getDeliverySettings } from "@/lib/db"
 import type { ApiResponse, DeliverySettings } from "@/lib/types"
 
+export const dynamic = "force-dynamic"
+
 export async function GET() {
   try {
     const settings = await getDeliverySettings()

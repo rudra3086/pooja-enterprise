@@ -12,6 +12,8 @@ import {
 import { Users, TrendingUp, Package } from "lucide-react"
 import { getClients, getOrders } from "@/lib/db"
 
+export const dynamic = "force-dynamic"
+
 export default async function AdminClientsPage() {
   try {
     // Fetch all clients from database

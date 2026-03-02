@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { ClipboardList, Search, Filter, Eye, Package } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -65,7 +64,7 @@ const statusColors: Record<string, string> = {
 }
 
 export default function OrdersPage() {
-  const searchParams = useSearchParams()
+  const [requestedOrderId, setRequestedOrderId] = useState<string | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
@@ -125,14 +124,18 @@ export default function OrdersPage() {
   }, [searchQuery, orders])
 
   useEffect(() => {
-    const requestedOrderId = searchParams.get("orderId")
     if (!requestedOrderId || orders.length === 0) return
 
     const matchedOrder = orders.find((order) => order.id === requestedOrderId)
     if (matchedOrder) {
       setSelectedOrder(matchedOrder)
     }
-  }, [orders, searchParams])
+  }, [orders, requestedOrderId])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    setRequestedOrderId(params.get("orderId"))
+  }, [])
 
   const getStatusLabel = (status: string) => {
     return status.charAt(0).toUpperCase() + status.slice(1)
