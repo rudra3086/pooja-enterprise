@@ -17,7 +17,6 @@ import {
   Menu,
   X,
   ChevronDown,
-  Shield,
   ShoppingBag,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -73,7 +72,7 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-primary text-primary-foreground">
+      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between">
             {/* Logo */}
@@ -83,7 +82,7 @@ export default function AdminLayout({
                 alt="Pooja Enterprise Admin"
                 width={32}
                 height={32}
-                className="h-8 w-8 lg:h-10 lg:w-10"
+                className="h-8 w-8 rounded-sm lg:h-10 lg:w-10"
               />
               <span className="font-serif text-xl font-semibold">Admin Panel</span>
             </Link>
@@ -99,8 +98,8 @@ export default function AdminLayout({
                       variant="ghost"
                       size="sm"
                       className={cn(
-                        "gap-2 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10",
-                        isActive && "text-primary-foreground bg-primary-foreground/10"
+                        "gap-2 text-muted-foreground hover:text-foreground hover:bg-accent",
+                        isActive && "text-foreground bg-muted"
                       )}
                     >
                       <item.icon className="h-4 w-4" />
@@ -115,8 +114,8 @@ export default function AdminLayout({
             <div className="flex items-center gap-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <div className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-md hover:bg-primary-foreground/10 text-sm font-medium text-primary-foreground">
-                    <div className="h-8 w-8 rounded-full bg-primary-foreground/20 flex items-center justify-center">
+                    <div className="cursor-pointer inline-flex items-center gap-2 px-3 py-2 rounded-md hover:bg-accent hover:text-accent-foreground text-sm font-medium transition-colors">
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
                       <User className="h-4 w-4" />
                     </div>
                     <span className="hidden sm:inline">{userName}</span>
@@ -142,7 +141,7 @@ export default function AdminLayout({
               {/* Mobile Menu Button */}
               <button
                 type="button"
-                className="md:hidden p-2 text-primary-foreground"
+                className="md:hidden p-2 text-foreground"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 aria-label="Toggle menu"
               >
@@ -160,7 +159,7 @@ export default function AdminLayout({
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="md:hidden border-t border-primary-foreground/10"
+              className="md:hidden border-t border-border bg-background"
             >
               <nav className="flex flex-col px-4 py-4 gap-1">
                 {navItems.map((item) => {
@@ -175,8 +174,8 @@ export default function AdminLayout({
                       <Button
                         variant="ghost"
                         className={cn(
-                          "w-full justify-start gap-2 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10",
-                          isActive && "text-primary-foreground bg-primary-foreground/10"
+                          "w-full justify-start gap-2 text-muted-foreground hover:text-foreground hover:bg-accent",
+                          isActive && "text-foreground bg-muted"
                         )}
                       >
                         <item.icon className="h-4 w-4" />

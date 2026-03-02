@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Menu, X, ShoppingCart, User } from "lucide-react"
+import { Menu, X, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const navLinks = [
@@ -28,7 +28,7 @@ export function Header() {
               alt="Pooja Enterprise"
               width={32}
               height={32}
-              className="h-8 w-8 lg:h-10 lg:w-10 header-logo"
+              className="h-8 w-8 rounded-sm lg:h-10 lg:w-10"
             />
             <span className="font-serif text-xl font-semibold tracking-tight lg:text-2xl">
               Pooja Enterprise
@@ -41,7 +41,7 @@ export function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-black"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 {link.label}
               </Link>
@@ -51,7 +51,7 @@ export function Header() {
           {/* Desktop Actions */}
           <div className="hidden lg:flex lg:items-center lg:gap-4">
             <Link href="/login">
-              <Button variant="ghost" size="sm" className="gap-2 hover:bg-black hover:text-white">
+              <Button variant="ghost" size="sm" className="gap-2 hover:bg-accent hover:text-accent-foreground">
                 <User className="h-4 w-4" />
                 Login
               </Button>
@@ -88,7 +88,7 @@ export function Header() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-black"
+                  className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {link.label}
@@ -96,7 +96,7 @@ export function Header() {
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-border mt-2">
                 <Link href="/login" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="ghost" size="sm" className="w-full justify-start gap-2 hover:bg-black hover:text-white">
+                  <Button variant="ghost" size="sm" className="w-full justify-start gap-2 hover:bg-accent hover:text-accent-foreground">
                     <User className="h-4 w-4" />
                     Login
                   </Button>

@@ -105,11 +105,11 @@ export default function ProductsPage() {
                     key={product.id}
                     id={product.id}
                     variants={itemVariants}
-                    className="group relative overflow-hidden rounded-2xl bg-card border border-border transition-all duration-300 hover:shadow-lg"
+                    className="group relative overflow-hidden rounded-2xl bg-white border border-border/40 transition-all duration-300 hover:shadow-lg dark:bg-accent/10 dark:border-accent/20"
                   >
                     <div className="flex flex-col lg:flex-row items-stretch h-full">
                       {/* Product Image */}
-                      <div className="relative h-72 sm:h-80 lg:h-auto lg:min-h-full lg:w-1/2 lg:self-stretch bg-muted overflow-hidden">
+                      <div className="relative h-72 sm:h-80 lg:h-auto lg:min-h-full lg:w-1/2 lg:self-stretch bg-white overflow-hidden dark:bg-accent/5">
                         <Image
                           src={product.image || "/placeholder.svg"}
                           alt={product.name}
