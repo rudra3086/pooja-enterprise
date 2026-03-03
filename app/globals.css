@@ -391,4 +391,156 @@ html.dark video {
       repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.025) 10px, rgba(0, 0, 0, 0.025) 20px),
       repeating-linear-gradient(-45deg, transparent, transparent 10px, rgba(0, 0, 0, 0.025) 10px, rgba(0, 0, 0, 0.025) 20px);
   }
+
+  .product-hover-card {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 1rem;
+    background: var(--card);
+    border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
+    height: 26rem;
+    transition: border-color 0.25s ease;
+  }
+
+  .product-hover-card::before {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    height: 38%;
+    border-radius: 0 0 0.75rem 0.75rem;
+    backdrop-filter: blur(0.8rem);
+    background: color-mix(in oklch, var(--foreground) 12%, transparent);
+    mask: linear-gradient(transparent, black 78%);
+    transition: transform 0.25s ease;
+    z-index: 1;
+  }
+
+  .product-hover-media {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: 0.95rem;
+    overflow: hidden;
+    transition: height 0.25s ease;
+  }
+
+  .product-hover-image {
+    object-fit: cover;
+    object-position: 50% 8%;
+    transition: transform 0.45s ease, object-position 0.3s ease;
+  }
+
+  .product-hover-content {
+    position: absolute;
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 2;
+    padding: 0.9rem;
+    border-radius: 0.8rem;
+    background: color-mix(in oklch, var(--card) 70%, transparent);
+    border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
+    opacity: 0;
+    transform: translateY(2.5rem);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .product-hover-title {
+    margin: 0;
+    color: var(--foreground);
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .product-hover-description {
+    margin-top: 0.5rem;
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+    line-height: 1.35;
+  }
+
+  .product-hover-action {
+    margin-top: 0.8rem;
+  }
+
+  .product-hover-card:hover,
+  .product-hover-card:focus-within {
+    border-color: color-mix(in oklch, var(--primary) 35%, var(--border));
+  }
+
+  .product-hover-card:hover::before,
+  .product-hover-card:focus-within::before {
+    transform: translateY(110%);
+  }
+
+  .product-hover-card:hover .product-hover-media,
+  .product-hover-card:focus-within .product-hover-media {
+    height: 66%;
+  }
+
+  .product-hover-card:hover .product-hover-image,
+  .product-hover-card:focus-within .product-hover-image {
+    transform: scale(1.04);
+    object-position: 50% 14%;
+  }
+
+  .product-hover-card:hover .product-hover-content,
+  .product-hover-card:focus-within .product-hover-content {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .product-flip-card {
+    width: 100%;
+    height: 26rem;
+    perspective: 1000px;
+    cursor: pointer;
+  }
+
+  .product-flip-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+  }
+
+  .product-flip-inner.is-flipped {
+    transform: rotateY(180deg);
+  }
+
+  .product-flip-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 1rem;
+    backface-visibility: hidden;
+  }
+
+  .product-flip-front {
+    overflow: hidden;
+  }
+
+  .product-flip-back {
+    transform: rotateY(180deg);
+    background: var(--card);
+    border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .home-scroll-stack {
+    position: relative;
+  }
+
+  .home-scroll-slide {
+    position: sticky;
+    top: 0;
+    min-height: 100vh;
+    isolation: isolate;
+  }
+
 }

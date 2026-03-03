@@ -1,16 +1,20 @@
 "use client"
 
-import React from "react"
+import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { motion } from "framer-motion"
-import { ArrowRight, Package, Shield, Truck, Users } from "lucide-react"
+import { ArrowRight, Award, Clock, Heart, Mail, MapPin, Package, Phone, Send, Shield, Target, Truck, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Toaster } from "@/components/ui/toaster"
 import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { PageTransition } from "@/components/layout/page-transition"
-import { AdvancedParallaxSection } from "@/components/parallax-section"
 import { AdvancedCustomCursor } from "@/components/advanced-custom-cursor"
+import { useToast } from "@/hooks/use-toast"
 
 const features = [
   {
@@ -41,24 +45,111 @@ const products = [
     name: "Tissue Napkin",
     description: "Premium quality napkins for restaurants and hotels.",
     image: "/images/tissue-napkins.jpg",
+    details: ["1-ply and 2-ply options", "Custom branding available", "Bulk-friendly packaging"],
   },
   {
     id: "prod-2",
     name: "Tissue Roll",
     description: "Soft and absorbent tissue rolls for commercial use.",
     image: "/images/tissue-rolls.jpg",
+    details: ["High sheet count", "Soft texture and strong absorbency", "Suitable for hospitality and office use"],
   },
   {
     id: "prod-3",
     name: "Ultra Soft Tissue",
     description: "Extra soft tissues for premium hospitality experiences.",
     image: "/images/facial-tissue.jpg",
+    details: ["Premium softness", "Elegant finish for premium service", "Safe for daily high-volume usage"],
   },
   {
     id: "prod-4",
     name: "Aluminium Foil",
     description: "Food-grade aluminum foil for packaging and kitchen use.",
     image: "/images/aluminum-foil.jpg",
+    details: ["Food-grade quality", "Heat resistant and durable", "Available in multiple widths"],
+  },
+]
+
+const aboutHighlights = [
+  { value: "500+", label: "Business Clients" },
+  { value: "15+", label: "Years Experience" },
+  { value: "10M+", label: "Products Delivered" },
+  { value: "98%", label: "Satisfaction Rate" },
+]
+
+const aboutValues = [
+  {
+    icon: Target,
+    title: "Quality First",
+    description: "We maintain strict quality standards across every product batch and delivery cycle.",
+  },
+  {
+    icon: Heart,
+    title: "Customer Focus",
+    description: "We build long-term relationships through responsive support and reliable service.",
+  },
+  {
+    icon: Award,
+    title: "Integrity",
+    description: "We operate transparently with clear commitments, fair pricing, and dependable timelines.",
+  },
+]
+
+const aboutTimeline = [
+  {
+    year: "2010",
+    title: "Foundation",
+    description: "Pooja Enterprise started with a mission to serve businesses with dependable packaging solutions.",
+  },
+  {
+    year: "2014",
+    title: "Product Expansion",
+    description: "We expanded into tissue rolls and premium napkin categories to serve more industry needs.",
+  },
+  {
+    year: "2017",
+    title: "Custom Branding",
+    description: "Introduced branded packaging options for clients seeking a stronger customer experience.",
+  },
+  {
+    year: "2020",
+    title: "Digital Operations",
+    description: "Moved to streamlined online workflows for faster communication and order handling.",
+  },
+  {
+    year: "2023",
+    title: "Sustainability",
+    description: "Added eco-conscious product options and improved packaging efficiency standards.",
+  },
+]
+
+const contactDetails = [
+  {
+    icon: MapPin,
+    title: "Address",
+    href: "https://maps.app.goo.gl/d1ojvPpPkTxxM3sy6",
+    external: true,
+    details: [
+      "Plot No 2900/75, Shree Sardar Patel Industrial Estate",
+      "(Old Indochem) GIDC Estate Ankleswar 393002",
+      "Gujarat, India",
+    ],
+  },
+  {
+    icon: Phone,
+    title: "Phone",
+    details: ["+91 9913938188"],
+  },
+  {
+    icon: Mail,
+    title: "Email",
+    href: "mailto:pooja123enterprise@gmail.com",
+    details: ["pooja123enterprise@gmail.com"],
+  },
+  {
+    icon: Clock,
+    title: "Business Hours",
+    details: ["Mon - Fri: 9:00 AM - 6:00 PM", "Sat: 9:00 AM - 1:00 PM"],
   },
 ]
 
@@ -107,19 +198,135 @@ const KineticText = ({ text, className = "", style = {} }: { text: string; class
 }
 
 export default function HomePage() {
+  const { toast } = useToast()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [flippedProducts, setFlippedProducts] = useState<Record<string, boolean>>({})
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    company: "",
+    phone: "",
+    message: "",
+  })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          subject: "Website Contact Inquiry",
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        toast({
+          title: "Message sent",
+          description: "Our team will contact you shortly.",
+        })
+        setFormData({
+          name: "",
+          email: "",
+          company: "",
+          phone: "",
+          message: "",
+        })
+      } else {
+        toast({
+          title: "Failed to send message",
+          description: data.error || "Please try again.",
+          variant: "destructive",
+        })
+      }
+    } catch {
+      toast({
+        title: "Error",
+        description: "Could not send message. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const toggleProductFlip = (productId: string) => {
+    setFlippedProducts((prev) => ({
+      ...prev,
+      [productId]: !prev[productId],
+    }))
+  }
+
+  const scrollToSection = (sectionId: string) => {
+    const target = document.getElementById(sectionId)
+    if (!target) return
+    const headerElement = document.getElementById("site-header")
+    const headerHeight = headerElement?.getBoundingClientRect().height ?? 80
+    const headerOffset = headerHeight + 30
+    const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - headerOffset)
+    window.scrollTo({ top, behavior: "smooth" })
+  }
+
+  const resolveSectionAnchor = (hash: string) => {
+    if (hash === "products") return "products"
+    if (hash === "about") return "about-anchor"
+    if (hash === "contact") return "contact-anchor"
+    return hash
+  }
+
+  useEffect(() => {
+    const scrollFromHash = () => {
+      const hash = window.location.hash.replace("#", "")
+      const targetId = resolveSectionAnchor(hash)
+      if (!targetId) return
+
+      let attempts = 0
+      const maxAttempts = 12
+
+      const tryScroll = () => {
+        const target = document.getElementById(targetId)
+        if (target) {
+          const headerElement = document.getElementById("site-header")
+          const headerHeight = headerElement?.getBoundingClientRect().height ?? 80
+          const headerOffset = headerHeight + 30
+          const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - headerOffset)
+          window.scrollTo({ top, behavior: "smooth" })
+          return
+        }
+
+        attempts += 1
+        if (attempts < maxAttempts) {
+          window.setTimeout(tryScroll, 50)
+        }
+      }
+
+      window.requestAnimationFrame(tryScroll)
+    }
+
+    scrollFromHash()
+    window.addEventListener("hashchange", scrollFromHash)
+    return () => window.removeEventListener("hashchange", scrollFromHash)
+  }, [])
+
   return (
     <>
       <AdvancedCustomCursor cursorSize={45} />
       <Header />
       <main className="pt-16 lg:pt-20">
         <PageTransition>
+          <div className="home-scroll-stack">
           {/* Hero Section - Modern Kinetic Typography */}
           <motion.section 
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ margin: "-100px", once: false }}
             transition={{ duration: 0.7, ease: "easeOut" }}
-            className="relative overflow-hidden bg-hero-tissue-watermark-large"
+            className="home-scroll-slide z-10 relative overflow-hidden bg-hero-tissue-watermark-large"
           >
             <div className="absolute inset-0 bg-grid-pattern opacity-5 z-0" />
             <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20 z-10">
@@ -185,7 +392,14 @@ export default function HomePage() {
                   transition={{ duration: 0.6, delay: 0.3, ease: "easeOut" }}
                   className="flex flex-col gap-3 sm:flex-row sm:justify-center pt-4"
                 >
-                  <Link href="/products">
+                  <Link
+                    href="/#products"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      window.history.replaceState(null, "", "/#products")
+                      scrollToSection("products")
+                    }}
+                  >
                     <motion.div
                       whileHover={{ scale: 1.08, y: -2 }}
                       whileTap={{ scale: 0.95 }}
@@ -201,7 +415,14 @@ export default function HomePage() {
                       </Button>
                     </motion.div>
                   </Link>
-                  <Link href="/contact">
+                  <Link
+                    href="/#contact"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      window.history.replaceState(null, "", "/#contact")
+                      scrollToSection("contact")
+                    }}
+                  >
                     <motion.div
                       whileHover={{ scale: 1.08, y: -2 }}
                       whileTap={{ scale: 0.95 }}
@@ -237,7 +458,7 @@ export default function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ margin: "-100px", once: false }}
             transition={{ duration: 0.7, ease: "easeOut" }}
-            className="relative bg-gradient-to-b from-slate-50 to-white py-24 lg:py-32 overflow-hidden"
+            className="home-scroll-slide z-20 relative bg-gradient-to-b from-slate-50 to-white py-24 lg:py-32 overflow-hidden"
           >
             <motion.div
               initial={{ opacity: 0 }}
@@ -271,7 +492,7 @@ export default function HomePage() {
 
               <motion.div
                 variants={containerVariants}
-                initial={false}
+                initial="hidden"
                 whileInView="visible"
                 viewport={{ margin: "-50px", once: false }}
                 className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
@@ -279,10 +500,7 @@ export default function HomePage() {
                 {features.map((feature) => (
                   <motion.div
                     key={feature.title}
-                    initial={false}
                     variants={itemVariants}
-                    whileInView="visible"
-                    viewport={{ margin: "-50px", once: false }}
                     whileHover={{ y: -8 }}
                     transition={{ duration: 0.1 }}
                     className="group relative rounded-xl bg-card p-6 shadow-sm border border-border transition-all duration-300 hover:shadow-lg hover:border-primary/30 dark:bg-card dark:border-border"
@@ -311,7 +529,8 @@ export default function HomePage() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ margin: "-100px", once: false }}
             transition={{ duration: 0.7, ease: "easeOut" }}
-            className="relative py-24 lg:py-32 overflow-hidden bg-white"
+            id="products"
+            className="home-scroll-slide z-30 relative py-24 lg:py-32 overflow-hidden bg-white"
           >
             <motion.div
               initial={{ opacity: 0 }}
@@ -326,7 +545,8 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ margin: "-100px", once: false }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="flex flex-col items-center justify-between gap-6 sm:flex-row mb-16"
+                className="mb-16 text-center"
+                id="products-anchor"
               >
                 <div>
                   <motion.h2 
@@ -348,18 +568,6 @@ export default function HomePage() {
                     Explore our range of premium packaging products
                   </motion.p>
                 </div>
-                <Link href="/products">
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Button variant="outline" className="gap-2 group bg-transparent">
-                      View All
-                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                    </Button>
-                  </motion.div>
-                </Link>
               </motion.div>
 
               <motion.div
@@ -369,155 +577,346 @@ export default function HomePage() {
                 viewport={{ margin: "-50px", once: false }}
                 className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
               >
-                {products.map((product, index) => (
+                {products.map((product) => {
+                  const isFlipped = !!flippedProducts[product.id]
+
+                  return (
                   <motion.div
                     key={product.id}
-                    initial={false}
+                    initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ margin: "-50px", once: false }}
                     transition={{ duration: 0.6, ease: "easeOut" }}
-                    whileHover={{ 
-                      y: -12,
-                      boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+                    whileHover={{ y: -10 }}
+                    className="product-flip-card"
+                    onClick={() => toggleProductFlip(product.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        toggleProductFlip(product.id)
+                      }
                     }}
-                    className="group relative overflow-hidden rounded-xl bg-card border border-border/40 transition-all duration-300 hover:border-primary/20 dark:bg-card dark:border-border"
-                    style={{
-                      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.08)",
-                    }}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isFlipped}
+                    aria-label={`${product.name} card. ${isFlipped ? "Show front" : "Show details"}`}
                   >
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/5 pointer-events-none"
-                      style={{ opacity: 0 }}
-                      whileHover={{ opacity: 1 }}
-                      transition={{ duration: 0.15 }}
-                    />
-                    <div className="aspect-square bg-gradient-to-br from-stone-100 to-stone-50 relative overflow-hidden">
-                      <Image
-                        src={product.image || "/placeholder.svg"}
-                        alt={product.name}
-                        fill
-                        className="object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                    </div>
-                    <div className="p-6">
-                      <h3 className="font-display font-bold text-stone-900 transition-colors duration-300 group-hover:text-primary">{product.name}</h3>
-                      <p className="mt-2 text-sm text-stone-600">
-                        {product.description}
-                      </p>
-                      <Link href="/login" className="mt-5 block">
-                        <motion.div
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <Button
-                      
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                          >
-                            Login to Order
-                          </Button>
-                        </motion.div>
-                      </Link>
+                    <div className={`product-flip-inner ${isFlipped ? "is-flipped" : ""}`}>
+                      <div className="product-flip-face product-flip-front product-hover-card group">
+                        <div className="product-hover-media">
+                          <Image
+                            src={product.image || "/placeholder.svg"}
+                            alt={product.name}
+                            fill
+                            className="product-hover-image"
+                          />
+                        </div>
+                        <section className="product-hover-content">
+                          <h3 className="product-hover-title font-display">{product.name}</h3>
+                          <p className="product-hover-description">
+                            {product.description}
+                          </p>
+                          <Link href="/login" className="product-hover-action block" onClick={(e) => e.stopPropagation()}>
+                            <motion.div
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full justify-center"
+                              >
+                                Login to Order
+                              </Button>
+                            </motion.div>
+                          </Link>
+                        </section>
+                      </div>
+
+                      <div className="product-flip-face product-flip-back">
+                        <h3 className="font-display text-lg font-bold tracking-tight">{product.name}</h3>
+                        <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{product.description}</p>
+                        <ul className="mt-4 space-y-2 text-sm text-muted-foreground">
+                          {product.details.map((detail) => (
+                            <li key={detail} className="flex items-start gap-2">
+                              <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
+                              <span>{detail}</span>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="mt-auto pt-5 space-y-3">
+                          <Link href="/login" onClick={(e) => e.stopPropagation()}>
+                            <Button className="w-full" size="sm">
+                              Login to Order
+                            </Button>
+                          </Link>
+                          <p className="text-center text-xs text-muted-foreground">Click card again to flip back</p>
+                        </div>
+                      </div>
                     </div>
                   </motion.div>
-                ))}
+                  )
+                })}
               </motion.div>
             </div>
           </motion.section>
 
-          {/* Parallax Effect Showcase */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ margin: "-100px", once: false }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-          >
-            <AdvancedParallaxSection
-            backgroundImage="/images/tissue-napkins.jpg"
-            backgroundSpeed={0.5}
-            foregroundSpeed={1.2}
-            className="py-32 lg:py-40"
-          >
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-full flex items-center">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center w-full">
-                {/* Text Content */}
-                <div className="space-y-6">
-                  <div>
-                    <span className="text-sm font-semibold uppercase tracking-widest text-neutral-600">
-                      Experience The Difference
-                    </span>
-                    <h2 className="mt-3 font-playfair text-4xl sm:text-5xl font-bold text-neutral-900 leading-tight">
-                      Crafted for Excellence
-                    </h2>
-                  </div>
-                  <p className="text-lg text-neutral-600 leading-relaxed">
-                    Our packaging solutions are engineered with precision and care. Each product 
-                    undergoes rigorous quality testing to ensure it meets international standards 
-                    and exceeds customer expectations.
-                  </p>
-                  <ul className="space-y-4">
-                    {["Premium Materials", "Eco-Friendly Options", "Custom Designs", "Fast Delivery"].map((item) => (
-                      <motion.li
-                        key={item}
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ margin: "-50px", once: false }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
-                        className="flex items-center text-neutral-700"
-                      >
-                        <span className="inline-block w-2 h-2 bg-neutral-900 rounded-full mr-3" />
-                        {item}
-                      </motion.li>
-                    ))}
-                  </ul>
-                </div>
-
-                {/* Image with Parallax Layer */}
-                <div className="hidden lg:block">
-                  <motion.div
-                    className="relative h-[500px] rounded-2xl overflow-hidden shadow-2xl"
-                    whileInView={{ scale: 1 }}
-                    initial={{ scale: 0.9 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.8 }}
-                  >
-                    <Image
-                      src="/images/tissue-rolls.jpg"
-                      alt="Product Excellence"
-                      fill
-                      className="object-cover transition-transform duration-500 hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                  </motion.div>
-                </div>
-              </div>
-            </div>
-          </AdvancedParallaxSection>
-          </motion.div>
-
-          {/* CTA Section */}
-          <motion.section 
+          {/* About Section */}
+          <motion.section
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ margin: "-100px", once: false }}
             transition={{ duration: 0.7, ease: "easeOut" }}
-            className="theme-preserve relative bg-slate-800 text-white py-24 lg:py-32 overflow-hidden dark:bg-zinc-700"
+            id="about"
+            className="z-60 relative py-24 lg:py-32 bg-muted"
           >
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ margin: "-100px", once: false }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/10 via-black/5 to-transparent pointer-events-none"
-            />
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ margin: "-100px", once: false }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
+                className="text-center"
+                id="about-anchor"
+              >
+                <h2 className="font-display text-3xl font-bold sm:text-4xl tracking-tight">
+                  About Pooja Enterprise
+                </h2>
+                <p className="mt-4 text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                  Since 2010, we have delivered trusted packaging solutions for restaurants, hotels,
+                  hospitals, and growing businesses. Our focus is simple: premium quality, reliable delivery,
+                  and long-term partnerships.
+                </p>
+              </motion.div>
+
+              <motion.div
+                variants={containerVariants}
+                initial={false}
+                whileInView="visible"
+                viewport={{ margin: "-50px", once: false }}
+                className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
+              >
+                {aboutHighlights.map((item) => (
+                  <motion.div
+                    key={item.label}
+                    variants={itemVariants}
+                    className="rounded-xl border border-border bg-card p-6 text-center"
+                  >
+                    <div className="font-serif text-4xl font-semibold lg:text-5xl">{item.value}</div>
+                    <div className="mt-2 text-muted-foreground">{item.label}</div>
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              <motion.div
+                variants={containerVariants}
+                initial={false}
+                whileInView="visible"
+                viewport={{ margin: "-50px", once: false }}
+                className="mt-14 grid gap-6 md:grid-cols-3"
+              >
+                {aboutValues.map((value) => (
+                  <motion.div
+                    key={value.title}
+                    variants={itemVariants}
+                    className="rounded-xl border border-border bg-card p-6"
+                  >
+                    <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-muted">
+                      <value.icon className="h-5 w-5 text-foreground" />
+                    </div>
+                    <h3 className="mt-4 text-lg font-semibold">{value.title}</h3>
+                    <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{value.description}</p>
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              <motion.div
+                initial={false}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ margin: "-50px", once: false }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                className="mt-16"
+              >
+                <h3 className="text-center font-display text-2xl font-bold tracking-tight sm:text-3xl">Our Journey</h3>
+                <p className="mt-2 text-center text-sm text-muted-foreground">
+                  Key milestones that shaped our growth and service quality.
+                </p>
+
+                <div className="relative mx-auto mt-8 max-w-4xl">
+                  <div className="absolute left-3 top-0 h-full w-px bg-border sm:left-1/2 sm:-translate-x-px" />
+                  <div className="space-y-5">
+                    {aboutTimeline.map((item, index) => (
+                      <motion.div
+                        key={item.year}
+                        initial={false}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ margin: "-40px", once: false }}
+                        transition={{ duration: 0.45, delay: index * 0.04 }}
+                        className="relative pl-10 sm:pl-0"
+                      >
+                        <div className="absolute left-1.5 top-6 h-3 w-3 rounded-full bg-primary sm:left-1/2 sm:-translate-x-1.5" />
+                        <div className={`rounded-xl border border-border bg-card p-5 sm:w-[47%] ${index % 2 === 0 ? "sm:mr-auto" : "sm:ml-auto"}`}>
+                          <span className="text-xs font-semibold uppercase tracking-wide text-accent">{item.year}</span>
+                          <h4 className="mt-1 text-base font-semibold">{item.title}</h4>
+                          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </motion.section>
+
+          {/* Contact Section */}
+          <section
+            id="contact"
+            className="z-70 relative py-24 lg:py-32 bg-white"
+          >
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div
+                className="text-center"
+                id="contact-anchor"
+              >
+                <h2 className="font-display text-3xl font-bold sm:text-4xl tracking-tight">Contact Us</h2>
+                <p className="mt-4 text-muted-foreground max-w-2xl mx-auto">
+                  Reach out for bulk pricing, custom branding, and delivery support.
+                </p>
+              </div>
+
+              <div className="mt-12 grid gap-10 lg:grid-cols-2 lg:gap-14">
+                <div
+                  className="rounded-2xl border border-border bg-card p-6 sm:p-8"
+                >
+                  <h3 className="font-display text-2xl font-bold tracking-tight">Send us a message</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Share your requirement and our team will get back to you within 24 hours.
+                  </p>
+
+                  <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="home-name">Full Name *</Label>
+                        <Input
+                          id="home-name"
+                          placeholder="John Doe"
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="home-email">Email Address *</Label>
+                        <Input
+                          id="home-email"
+                          type="email"
+                          placeholder="john@company.com"
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="home-company">Company Name</Label>
+                        <Input
+                          id="home-company"
+                          placeholder="Your Company"
+                          value={formData.company}
+                          onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="home-phone">Phone Number</Label>
+                        <Input
+                          id="home-phone"
+                          type="tel"
+                          placeholder="+91 123 456 7890"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="home-message">Message *</Label>
+                      <Textarea
+                        id="home-message"
+                        placeholder="Tell us about your requirement..."
+                        rows={5}
+                        className="resize-none [field-sizing:fixed] max-h-44 overflow-y-auto"
+                        value={formData.message}
+                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <Button type="submit" className="w-full sm:w-auto gap-2" size="lg" disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        "Sending..."
+                      ) : (
+                        <>
+                          Send Message
+                          <Send className="h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+                  </form>
+                </div>
+
+                <div
+                  className="rounded-2xl border border-border bg-card p-5 sm:p-6"
+                >
+                  <h3 className="font-display text-xl font-bold tracking-tight">Contact Information</h3>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                    {contactDetails.map((item) => (
+                      <div key={item.title} className="rounded-lg border border-border/70 bg-background/50 p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
+                            <item.icon className="h-4 w-4 text-foreground" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold leading-none">{item.title}</h4>
+                            {item.href ? (
+                              <a
+                                href={item.href}
+                                target={item.external ? "_blank" : undefined}
+                                rel={item.external ? "noopener noreferrer" : undefined}
+                                className="mt-2 block space-y-1 text-sm text-muted-foreground leading-relaxed transition-colors hover:text-primary"
+                              >
+                                {item.details.map((detail) => (
+                                  <p key={detail} className="break-all">{detail}</p>
+                                ))}
+                              </a>
+                            ) : (
+                              <div className="mt-2 space-y-1 text-sm text-muted-foreground leading-relaxed">
+                                {item.details.map((detail) => (
+                                  <p key={detail} className="break-words">{detail}</p>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* CTA Section */}
+          <section 
+            className="z-80 theme-preserve relative bg-slate-800 text-white py-14 lg:py-20 overflow-hidden dark:bg-zinc-700"
+          >
+            <div
+              className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/10 via-black/5 to-transparent pointer-events-none"
+            />
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+              <div
                 className="text-center"
               >
                 <h2 className="font-display text-3xl font-bold sm:text-4xl tracking-tight">
@@ -527,45 +926,42 @@ export default function HomePage() {
                   Join hundreds of businesses that trust Pooja Enterprise for their packaging needs.
                   Register now and get access to bulk pricing and custom branding options.
                 </p>
-                <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center">
+                <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:justify-center">
                   <Link href="/register">
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
+                    <Button
+                      size="lg"
+                      variant="secondary"
+                      className="w-full sm:w-auto gap-2 group font-semibold"
                     >
-                      <Button
-                        size="lg"
-                        variant="secondary"
-                        className="w-full sm:w-auto gap-2 group font-semibold"
-                      >
-                        Create Account
-                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                      </Button>
-                    </motion.div>
+                      Create Account
+                      <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                    </Button>
                   </Link>
-                  <Link href="/contact">
-                    <motion.div
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
+                  <Link
+                    href="/#contact"
+                    onClick={(event) => {
+                      event.preventDefault()
+                      window.history.replaceState(null, "", "/#contact")
+                      scrollToSection("contact")
+                    }}
+                  >
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="w-full sm:w-auto border-white text-white hover:bg-white/10 bg-transparent font-semibold"
                     >
-                      <Button
-                        size="lg"
-                        variant="outline"
-                        className="w-full sm:w-auto border-white text-white hover:bg-white/10 bg-transparent font-semibold"
-                      >
-                        Contact Sales
-                      </Button>
-                    </motion.div>
+                      Contact Sales
+                    </Button>
                   </Link>
                 </div>
-              </motion.div>
+              </div>
             </div>
-          </motion.section>
+          </section>
+          </div>
         </PageTransition>
       </main>
       <Footer />
+      <Toaster />
     </>
   )
 }

@@ -3,22 +3,61 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
 const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/products", label: "Products" },
-  { href: "/about", label: "About Us" },
-  { href: "/contact", label: "Contact" },
+  { href: "/", label: "Home", sectionId: "__home__" },
+  { href: "/#products", label: "Products", sectionId: "products" },
+  { href: "/#about", label: "About Us", sectionId: "about-anchor" },
+  { href: "/#contact", label: "Contact", sectionId: "contact-anchor" },
 ]
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
+
+  const getNavOffset = () => {
+    const headerElement = document.getElementById("site-header")
+    const headerHeight = headerElement?.getBoundingClientRect().height ?? 80
+    return headerHeight + 30
+  }
+
+  const scrollToSection = (sectionId: string) => {
+    const target = document.getElementById(sectionId)
+    if (!target) return
+    const headerOffset = getNavOffset()
+    const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - headerOffset)
+    window.scrollTo({ top, behavior: "smooth" })
+  }
+
+  const handleNavClick = (event: React.MouseEvent<HTMLAnchorElement>, link: (typeof navLinks)[number]) => {
+    if (!link.sectionId) {
+      setIsMenuOpen(false)
+      return
+    }
+
+    if (pathname === "/") {
+      event.preventDefault()
+      if (link.sectionId === "__home__") {
+        window.scrollTo({ top: 0, behavior: "smooth" })
+        window.history.replaceState(null, "", "/")
+      } else {
+        scrollToSection(link.sectionId)
+        window.history.replaceState(null, "", link.href)
+      }
+    } else {
+      router.push(link.href)
+    }
+
+    setIsMenuOpen(false)
+  }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+    <header id="site-header" className="fixed top-0 left-0 right-0 z-[200] bg-background/80 backdrop-blur-md border-b border-border">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between lg:h-20">
           {/* Logo */}
@@ -42,6 +81,7 @@ export function Header() {
                 key={link.href}
                 href={link.href}
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                onClick={(event) => handleNavClick(event, link)}
               >
                 {link.label}
               </Link>
@@ -89,7 +129,7 @@ export function Header() {
                   key={link.href}
                   href={link.href}
                   className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                  onClick={() => setIsMenuOpen(false)}
+                  onClick={(event) => handleNavClick(event, link)}
                 >
                   {link.label}
                 </Link>

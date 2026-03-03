@@ -94,7 +94,7 @@ export const AdvancedCustomCursor: React.FC<AdvancedCustomCursorProps> = ({
       {/* Fixed position cursor circle with mix-blend-mode: difference for color inversion */}
       <div
         ref={cursorRef}
-        className="pointer-events-none fixed z-50"
+        className="pointer-events-none fixed z-[300]"
         style={{
           width: `${dynamicSize}px`,
           height: `${dynamicSize}px`,
