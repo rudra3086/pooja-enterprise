@@ -532,6 +532,470 @@ html.dark video {
     flex-direction: column;
   }
 
+  .why-hover-card {
+    position: relative;
+    height: 14rem;
+    overflow: hidden;
+    border-radius: 1rem;
+    border: 1px solid color-mix(in oklch, var(--border) 72%, transparent);
+    background: var(--card);
+    transition: border-color 0.3s ease, transform 0.3s ease;
+    isolation: isolate;
+  }
+
+  .why-hover-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(120deg, color-mix(in oklch, var(--muted) 48%, transparent) 0%, transparent 48%, color-mix(in oklch, var(--muted) 24%, transparent) 100%);
+    opacity: 0.72;
+    z-index: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .why-hover-notch {
+    position: absolute;
+    left: 1.9rem;
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 9999px;
+    background: var(--background);
+    z-index: 4;
+  }
+
+  .why-hover-notch-top {
+    top: -0.45rem;
+  }
+
+  .why-hover-notch-bottom {
+    bottom: -0.45rem;
+  }
+
+  .why-hover-dots {
+    list-style: none;
+    position: absolute;
+    top: 0.35rem;
+    left: 2.35rem;
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  .why-hover-dots li {
+    width: 0.16rem;
+    height: 0.16rem;
+    margin: 0.31rem 0;
+    border-radius: 9999px;
+    background: color-mix(in oklch, var(--muted-foreground) 35%, var(--card));
+  }
+
+  .why-hover-media {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background-image:
+      radial-gradient(circle at 25% 20%, color-mix(in oklch, var(--primary) 28%, transparent) 0%, transparent 38%),
+      radial-gradient(circle at 78% 78%, color-mix(in oklch, var(--foreground) 6%, transparent) 0%, transparent 45%),
+      linear-gradient(125deg, color-mix(in oklch, var(--primary) 16%, var(--card)) 8%, color-mix(in oklch, var(--card) 88%, transparent) 48%, color-mix(in oklch, var(--foreground) 4%, var(--card)) 100%);
+    background-size: cover;
+    filter: grayscale(1);
+    transition: filter 0.32s ease, transform 0.35s ease;
+  }
+
+  .why-hover-content {
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    left: 4rem;
+    z-index: 5;
+    color: var(--foreground);
+    transition: color 0.25s ease;
+  }
+
+  .why-hover-icon {
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in oklch, var(--primary) 78%, var(--card));
+    color: var(--primary-foreground);
+    border: 1px solid color-mix(in oklch, var(--primary) 40%, var(--border));
+    transition: transform 0.2s ease;
+  }
+
+  .why-hover-title {
+    margin-top: 0.85rem;
+    font-size: 1.45rem;
+    font-weight: 700;
+    line-height: 1.12;
+    color: var(--foreground);
+    pointer-events: none;
+  }
+
+  .why-hover-description {
+    margin-top: 0.6rem;
+    max-width: 15rem;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    opacity: 0.92;
+    color: var(--muted-foreground);
+    transition: color 0.2s ease, opacity 0.2s ease;
+  }
+
+  .why-hover-arrow {
+    position: absolute;
+    right: 4.15rem;
+    bottom: 1rem;
+    width: 1.65rem;
+    height: 1.65rem;
+    z-index: 6;
+    color: var(--primary-foreground);
+    opacity: 0;
+    transform: scale(0.2);
+    transition: opacity 0.22s ease, transform 0.24s ease;
+    pointer-events: none;
+  }
+
+  .why-hover-trigger {
+    position: absolute;
+    right: 0.9rem;
+    bottom: 0.9rem;
+    width: 1.95rem;
+    height: 1.95rem;
+    border: none;
+    border-radius: 9999px;
+    z-index: 3;
+    cursor: default;
+    background: color-mix(in oklch, var(--primary) 86%, var(--card));
+    transition: transform 0.35s ease;
+    mix-blend-mode: normal;
+  }
+
+  .why-hover-card:hover,
+  .why-hover-card:focus-within {
+    border-color: color-mix(in oklch, var(--primary) 45%, var(--border));
+  }
+
+  .why-hover-card:hover .why-hover-media,
+  .why-hover-card:focus-within .why-hover-media {
+    filter: grayscale(0);
+    transform: scale(1.04);
+  }
+
+  .why-hover-card:hover .why-hover-trigger,
+  .why-hover-card:focus-within .why-hover-trigger {
+    transform: scale(12);
+  }
+
+  .why-hover-card:hover .why-hover-arrow,
+  .why-hover-card:focus-within .why-hover-arrow {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .why-hover-card:hover .why-hover-description,
+  .why-hover-card:focus-within .why-hover-description {
+    color: color-mix(in oklch, var(--primary-foreground) 88%, white);
+    opacity: 0.95;
+  }
+
+  .why-hover-card:hover .why-hover-title,
+  .why-hover-card:hover .why-hover-content,
+  .why-hover-card:focus-within .why-hover-title,
+  .why-hover-card:focus-within .why-hover-content {
+    color: var(--primary-foreground);
+  }
+
+  .why-hover-card:hover::after,
+  .why-hover-card:focus-within::after {
+    opacity: 0.98;
+  }
+
+  .about-theme-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.95rem;
+    border: 1px solid color-mix(in oklch, var(--border) 72%, transparent);
+    background: var(--card);
+    min-height: 15rem;
+    isolation: isolate;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .about-theme-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+      130deg,
+      transparent 0% 38%,
+      color-mix(in oklch, var(--primary) 55%, transparent) 68%,
+      color-mix(in oklch, var(--accent) 50%, transparent) 86%,
+      color-mix(in oklch, var(--foreground) 20%, transparent) 100%
+    );
+    background-position: 0% 0%;
+    background-size: 280% 280%;
+    transition: background-position 360ms ease, transform 360ms ease;
+    pointer-events: none;
+  }
+
+  .about-theme-card-content {
+    position: relative;
+    z-index: 2;
+    margin: 0.8rem;
+    border-radius: 0.7rem;
+    min-height: calc(100% - 1.6rem);
+    padding: 1.2rem 1.15rem 3.3rem;
+    background-image: radial-gradient(
+      color-mix(in oklch, var(--muted-foreground) 24%, transparent) 7%,
+      transparent 8%
+    );
+    background-position: 0% 0%;
+    background-size: 1.35rem 1.35rem;
+    transition: background-position 350ms ease;
+  }
+
+  .about-theme-card-title {
+    margin: 0;
+    color: var(--foreground);
+    font-size: 1.28rem;
+    line-height: 1.2;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+
+  .about-theme-card-subtitle {
+    margin-top: 0.85rem;
+    font-size: 0.92rem;
+    line-height: 1.5;
+    color: var(--muted-foreground);
+    font-weight: 450;
+    min-height: 4.5rem;
+  }
+
+  .about-theme-card-subtitle-word {
+    display: inline-block;
+    opacity: 0.72;
+    transform: translateY(24%);
+    transition: opacity 180ms ease, transform 220ms cubic-bezier(0.9, 0.06, 0.15, 0.9);
+  }
+
+  .about-theme-card-icon {
+    position: absolute;
+    left: 1.9rem;
+    bottom: 1.7rem;
+    z-index: 3;
+    color: color-mix(in oklch, var(--foreground) 58%, transparent);
+    transition: color 240ms ease, transform 240ms ease;
+  }
+
+  .about-theme-card:hover,
+  .about-theme-card:focus-within {
+    border-color: color-mix(in oklch, var(--primary) 45%, var(--border));
+    transform: translateY(-4px);
+  }
+
+  .about-theme-card:hover::before,
+  .about-theme-card:focus-within::before {
+    background-position: 100% 100%;
+    transform: scale(1.04, 1.02);
+  }
+
+  .about-theme-card:hover > .about-theme-card-content,
+  .about-theme-card:focus-within > .about-theme-card-content {
+    background-position: -12% 0%;
+  }
+
+  .about-theme-card:hover > .about-theme-card-icon,
+  .about-theme-card:focus-within > .about-theme-card-icon {
+    color: var(--primary-foreground);
+    transform: translateY(-2px);
+  }
+
+  .about-theme-card:hover .about-theme-card-subtitle-word,
+  .about-theme-card:focus-within .about-theme-card-subtitle-word {
+    opacity: 1;
+    transform: translateY(0%);
+  }
+
+  .about-theme-card:hover .about-theme-card-title,
+  .about-theme-card:focus-within .about-theme-card-title,
+  .about-theme-card:hover .about-theme-card-subtitle,
+  .about-theme-card:focus-within .about-theme-card-subtitle {
+    color: var(--primary-foreground);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .about-theme-card,
+    .about-theme-card::before,
+    .about-theme-card-content,
+    .about-theme-card-icon,
+    .about-theme-card-subtitle-word {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+
+  .about-journey-item {
+    --journey-bg: color-mix(in oklch, var(--chart-3) 70%, var(--card));
+    --journey-bg-2: color-mix(in oklch, var(--chart-2) 68%, var(--card));
+    --journey-bg-soft: color-mix(in oklch, var(--chart-3) 28%, var(--card));
+    --journey-shadow: color-mix(in oklch, var(--chart-3) 34%, transparent);
+    --journey-hover-text: color-mix(in oklch, var(--foreground) 88%, white);
+  }
+
+  .about-journey-item:nth-child(4n + 2) {
+    --journey-bg: color-mix(in oklch, var(--chart-2) 72%, var(--card));
+    --journey-bg-2: color-mix(in oklch, var(--chart-3) 58%, var(--card));
+    --journey-bg-soft: color-mix(in oklch, var(--chart-2) 30%, var(--card));
+    --journey-shadow: color-mix(in oklch, var(--chart-2) 38%, transparent);
+  }
+
+  .about-journey-item:nth-child(4n + 3) {
+    --journey-bg: color-mix(in oklch, var(--chart-4) 76%, var(--card));
+    --journey-bg-2: color-mix(in oklch, var(--chart-5) 70%, var(--card));
+    --journey-bg-soft: color-mix(in oklch, var(--chart-4) 30%, var(--card));
+    --journey-shadow: color-mix(in oklch, var(--chart-4) 36%, transparent);
+  }
+
+  .about-journey-item:nth-child(4n + 4) {
+    --journey-bg: color-mix(in oklch, var(--chart-1) 62%, var(--card));
+    --journey-bg-2: color-mix(in oklch, var(--chart-3) 62%, var(--card));
+    --journey-bg-soft: color-mix(in oklch, var(--chart-1) 26%, var(--card));
+    --journey-shadow: color-mix(in oklch, var(--chart-1) 36%, transparent);
+  }
+
+  .about-journey-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.9rem;
+    border: 1px solid color-mix(in oklch, var(--border) 75%, transparent);
+    background: var(--card);
+    min-height: 10.75rem;
+    box-shadow: 0 10px 24px color-mix(in oklch, var(--journey-shadow) 45%, transparent);
+    transition: transform 0.28s ease, box-shadow 0.28s ease, border-color 0.28s ease;
+    text-decoration: none;
+  }
+
+  .about-journey-overlay {
+    position: absolute;
+    width: 8rem;
+    height: 8rem;
+    border-radius: 9999px;
+    background:
+      radial-gradient(circle at 30% 30%, color-mix(in oklch, var(--journey-bg) 95%, white) 0%, transparent 62%),
+      linear-gradient(140deg, var(--journey-bg) 0%, var(--journey-bg-2) 100%);
+    top: -1.8rem;
+    right: -1.6rem;
+    z-index: 1;
+    transition: transform 0.34s ease, filter 0.34s ease;
+  }
+
+  .about-journey-circle {
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 9999px;
+    border: 2px solid var(--journey-bg);
+    background: var(--card);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+  }
+
+  .about-journey-circle-core {
+    display: block;
+    width: 3.1rem;
+    height: 3.1rem;
+    border-radius: 9999px;
+    background: linear-gradient(145deg, var(--journey-bg) 0%, var(--journey-bg-2) 100%);
+    transition: background 0.3s ease;
+  }
+
+  .about-journey-content {
+    position: relative;
+    z-index: 4;
+    padding: 1.2rem 1.2rem 1.25rem;
+    max-width: 82%;
+  }
+
+  .about-journey-year {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: color-mix(in oklch, var(--journey-bg-2) 72%, var(--foreground));
+    transition: color 0.25s ease;
+  }
+
+  .about-journey-title {
+    margin-top: 0.35rem;
+    font-size: 1.02rem;
+    font-weight: 650;
+    color: var(--foreground);
+    transition: color 0.25s ease;
+  }
+
+  .about-journey-description {
+    margin-top: 0.55rem;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    color: var(--muted-foreground);
+    transition: color 0.25s ease;
+  }
+
+  .about-journey-card:hover,
+  .about-journey-card:focus-within {
+    transform: translateY(-4px);
+    border-color: color-mix(in oklch, var(--journey-bg) 44%, var(--border));
+    box-shadow: 0 18px 34px color-mix(in oklch, var(--journey-shadow) 70%, transparent);
+  }
+
+  .about-journey-card:hover .about-journey-overlay,
+  .about-journey-card:focus-within .about-journey-overlay {
+    transform: scale(3.8);
+    filter: saturate(1.25);
+  }
+
+  .about-journey-card:hover .about-journey-circle,
+  .about-journey-card:focus-within .about-journey-circle {
+    border-color: color-mix(in oklch, var(--journey-bg-soft) 85%, var(--card));
+    background: var(--journey-bg);
+  }
+
+  .about-journey-card:hover .about-journey-circle-core,
+  .about-journey-card:focus-within .about-journey-circle-core {
+    background: color-mix(in oklch, var(--journey-bg-soft) 90%, white);
+  }
+
+  .about-journey-card:hover .about-journey-year,
+  .about-journey-card:hover .about-journey-title,
+  .about-journey-card:hover .about-journey-description,
+  .about-journey-card:focus-within .about-journey-year,
+  .about-journey-card:focus-within .about-journey-title,
+  .about-journey-card:focus-within .about-journey-description {
+    color: var(--journey-hover-text);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .about-journey-card,
+    .about-journey-overlay,
+    .about-journey-circle,
+    .about-journey-circle-core,
+    .about-journey-year,
+    .about-journey-title,
+    .about-journey-description {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+
   .home-scroll-stack {
     position: relative;
   }

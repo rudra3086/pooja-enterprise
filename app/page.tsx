@@ -560,20 +560,34 @@ export default function HomePage() {
                     variants={itemVariants}
                     whileHover={{ y: -8 }}
                     transition={{ duration: 0.1 }}
-                    className="group relative rounded-xl bg-card p-6 shadow-sm border border-border transition-all duration-300 hover:shadow-lg hover:border-primary/30 dark:bg-card dark:border-border"
+                    className="why-hover-card group"
                   >
-                    <motion.div
-                      initial={{ scale: 1 }}
-                      whileHover={{ scale: 1.1 }}
-                      transition={{ duration: 0.1 }}
-                      className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary text-primary-foreground"
-                    >
-                      <feature.icon className="h-6 w-6" />
-                    </motion.div>
-                    <h3 className="mt-4 font-display font-bold transition-colors duration-300 group-hover:text-primary">{feature.title}</h3>
-                    <p className="mt-2 text-sm text-muted-foreground leading-relaxed transition-colors duration-300">
-                      {feature.description}
-                    </p>
+                    <span className="why-hover-notch why-hover-notch-top" aria-hidden="true" />
+                    <span className="why-hover-notch why-hover-notch-bottom" aria-hidden="true" />
+
+                    <ul className="why-hover-dots" aria-hidden="true">
+                      {Array.from({ length: 23 }).map((_, index) => (
+                        <li key={`${feature.title}-dot-${index}`} />
+                      ))}
+                    </ul>
+
+                    <div className="why-hover-media" aria-hidden="true" />
+
+                    <div className="why-hover-content">
+                      <motion.div
+                        initial={{ scale: 1 }}
+                        whileHover={{ scale: 1.08 }}
+                        transition={{ duration: 0.15 }}
+                        className="why-hover-icon"
+                      >
+                        <feature.icon className="h-5 w-5" />
+                      </motion.div>
+                      <h3 className="why-hover-title font-display">{feature.title}</h3>
+                      <p className="why-hover-description">{feature.description}</p>
+                    </div>
+
+                    <ArrowRight className="why-hover-arrow" aria-hidden="true" />
+                    <button className="why-hover-trigger" aria-label={`View ${feature.title}`} />
                   </motion.div>
                 ))}
               </motion.div>
@@ -777,13 +791,25 @@ export default function HomePage() {
                   <motion.div
                     key={value.title}
                     variants={itemVariants}
-                    className="rounded-xl border border-border bg-card p-6"
+                    className="about-theme-card"
                   >
-                    <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-muted">
-                      <value.icon className="h-5 w-5 text-foreground" />
+                    <div className="about-theme-card-content">
+                      <h3 className="about-theme-card-title">{value.title}</h3>
+                      <h4 className="about-theme-card-subtitle">
+                        {value.description.split(" ").map((word, index) => (
+                          <span
+                            key={`${value.title}-word-${index}`}
+                            className="about-theme-card-subtitle-word"
+                            style={{ transitionDelay: `${index * 32}ms` }}
+                          >
+                            {word}&nbsp;
+                          </span>
+                        ))}
+                      </h4>
                     </div>
-                    <h3 className="mt-4 text-lg font-semibold">{value.title}</h3>
-                    <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{value.description}</p>
+                    <div className="about-theme-card-icon">
+                      <value.icon className="h-6 w-6" />
+                    </div>
                   </motion.div>
                 ))}
               </motion.div>
@@ -810,13 +836,19 @@ export default function HomePage() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ margin: "-40px", once: true }}
                         transition={{ duration: 0.5, ease: "easeOut", delay: index * 0.06 }}
-                        className="relative pl-10 sm:pl-0"
+                        className="about-journey-item relative pl-10 sm:pl-0"
                       >
                         <div className="absolute left-1.5 top-6 h-3 w-3 rounded-full bg-primary sm:left-1/2 sm:-translate-x-1.5" />
-                        <div className={`rounded-xl border border-border bg-card p-5 sm:w-[47%] ${index % 2 === 0 ? "sm:mr-auto" : "sm:ml-auto"}`}>
-                          <span className="text-xs font-semibold uppercase tracking-wide text-accent">{item.year}</span>
-                          <h4 className="mt-1 text-base font-semibold">{item.title}</h4>
-                          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{item.description}</p>
+                        <div className={`about-journey-card sm:w-[47%] ${index % 2 === 0 ? "sm:mr-auto" : "sm:ml-auto"}`}>
+                          <div className="about-journey-overlay" aria-hidden="true" />
+                          <div className="about-journey-circle" aria-hidden="true">
+                            <span className="about-journey-circle-core" />
+                          </div>
+                          <div className="about-journey-content">
+                            <span className="about-journey-year">{item.year}</span>
+                            <h4 className="about-journey-title">{item.title}</h4>
+                            <p className="about-journey-description">{item.description}</p>
+                          </div>
                         </div>
                       </motion.div>
                     ))}
