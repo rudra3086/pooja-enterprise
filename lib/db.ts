@@ -1277,6 +1277,7 @@ async function ensureDeliverySchema(): Promise<void> {
         "ALTER TABLE orders ADD COLUMN distance_km DECIMAL(10, 2) NULL",
         "ALTER TABLE orders ADD COLUMN delivery_cost_per_km DECIMAL(10, 2) NULL",
         "ALTER TABLE orders ADD COLUMN admin_hidden_at TIMESTAMP NULL",
+        "ALTER TABLE orders ADD COLUMN client_hidden_at TIMESTAMP NULL",
       ]
 
       for (const statement of alterStatements) {
@@ -1802,6 +1803,7 @@ export async function getOrderById(id: string): Promise<Order | null> {
       o.production_latitude as productionLatitude, o.production_longitude as productionLongitude,
       o.distance_km as distanceKm, o.delivery_cost_per_km as deliveryCostPerKm,
       o.customer_notes as customerNotes, o.admin_notes as adminNotes,
+      o.admin_hidden_at as adminHiddenAt, o.client_hidden_at as clientHiddenAt,
       o.tracking_number as trackingNumber, o.shipped_at as shippedAt, o.delivered_at as deliveredAt,
       o.created_at as createdAt, o.updated_at as updatedAt
     FROM orders o
@@ -1888,6 +1890,8 @@ export async function getOrderById(id: string): Promise<Order | null> {
     deliveryCostPerKm: row.deliveryCostPerKm !== null ? parseFloat(row.deliveryCostPerKm) : undefined,
     customerNotes: row.customerNotes,
     adminNotes: row.adminNotes,
+    adminHiddenAt: row.adminHiddenAt,
+    clientHiddenAt: row.clientHiddenAt,
     trackingNumber: row.trackingNumber,
     shippedAt: row.shippedAt,
     deliveredAt: row.deliveredAt,
@@ -1904,6 +1908,8 @@ export async function getOrders(options?: {
   search?: string
   excludeAdminHidden?: boolean
   onlyAdminHidden?: boolean
+  excludeClientHidden?: boolean
+  onlyClientHidden?: boolean
   limit?: number
   offset?: number
 }): Promise<{ orders: Order[]; total: number }> {
@@ -1932,6 +1938,12 @@ export async function getOrders(options?: {
     whereClause += " AND o.admin_hidden_at IS NULL"
   }
 
+  if (options?.onlyClientHidden) {
+    whereClause += " AND o.client_hidden_at IS NOT NULL"
+  } else if (options?.excludeClientHidden) {
+    whereClause += " AND o.client_hidden_at IS NULL"
+  }
+
   const countRows = await query<RowDataPacket[]>(
     `SELECT COUNT(*) as total FROM orders o ${whereClause}`,
     params
@@ -1953,6 +1965,7 @@ export async function getOrders(options?: {
       o.production_latitude as productionLatitude, o.production_longitude as productionLongitude,
       o.distance_km as distanceKm, o.delivery_cost_per_km as deliveryCostPerKm,
       o.customer_notes as customerNotes, o.admin_notes as adminNotes,
+      o.admin_hidden_at as adminHiddenAt, o.client_hidden_at as clientHiddenAt,
       o.tracking_number as trackingNumber, o.shipped_at as shippedAt, o.delivered_at as deliveredAt,
       o.created_at as createdAt, o.updated_at as updatedAt,
       c.business_name as clientBusinessName, c.contact_person as clientContactPerson, c.email as clientEmail
@@ -2055,6 +2068,8 @@ export async function getOrders(options?: {
     deliveryCostPerKm: row.deliveryCostPerKm !== null ? parseFloat(row.deliveryCostPerKm) : undefined,
     customerNotes: row.customerNotes,
     adminNotes: row.adminNotes,
+    adminHiddenAt: row.adminHiddenAt,
+    clientHiddenAt: row.clientHiddenAt,
     trackingNumber: row.trackingNumber,
     shippedAt: row.shippedAt,
     deliveredAt: row.deliveredAt,
@@ -2166,6 +2181,30 @@ export async function restoreOrderById(orderId: string): Promise<boolean> {
      SET admin_hidden_at = NULL, updated_at = NOW()
      WHERE id = ? AND admin_hidden_at IS NOT NULL`,
     [orderId]
+  )
+
+  return result.affectedRows > 0
+}
+
+export async function hideOrderForClient(orderId: string, clientId: string): Promise<boolean> {
+  await ensureDeliverySchema()
+  const result = await execute(
+    `UPDATE orders
+     SET client_hidden_at = NOW(), updated_at = NOW()
+     WHERE id = ? AND client_id = ? AND client_hidden_at IS NULL`,
+    [orderId, clientId]
+  )
+
+  return result.affectedRows > 0
+}
+
+export async function restoreOrderForClient(orderId: string, clientId: string): Promise<boolean> {
+  await ensureDeliverySchema()
+  const result = await execute(
+    `UPDATE orders
+     SET client_hidden_at = NULL, updated_at = NOW()
+     WHERE id = ? AND client_id = ? AND client_hidden_at IS NOT NULL`,
+    [orderId, clientId]
   )
 
   return result.affectedRows > 0

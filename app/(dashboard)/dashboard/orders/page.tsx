@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
-import { ClipboardList, Search, Filter, Eye, Package } from "lucide-react"
+import { ClipboardList, Search, Filter, Eye, Package, RotateCcw, Trash2, Undo2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,9 +22,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
+import { useCart } from "@/lib/cart-context"
+import { useToast } from "@/hooks/use-toast"
 
 interface OrderItem {
   id: string
+  productId: string
+  variantId?: string
   productName: string
   productImageUrl?: string
   variantName?: string
@@ -53,6 +58,7 @@ interface Order {
   shippingCity: string
   shippingState: string
   shippingPostalCode: string
+  clientHiddenAt?: string | null
 }
 
 const statusColors: Record<string, string> = {
@@ -64,6 +70,9 @@ const statusColors: Record<string, string> = {
 }
 
 export default function OrdersPage() {
+  const router = useRouter()
+  const { replaceItems } = useCart()
+  const { toast } = useToast()
   const [requestedOrderId, setRequestedOrderId] = useState<string | null>(null)
   const [orders, setOrders] = useState<Order[]>([])
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
@@ -71,7 +80,9 @@ export default function OrdersPage() {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [visibilityFilter, setVisibilityFilter] = useState<"active" | "removed">("active")
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [actionOrderId, setActionOrderId] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -83,6 +94,7 @@ export default function OrdersPage() {
         if (statusFilter !== "all") {
           queryParams.append("status", statusFilter)
         }
+        queryParams.append("visibility", visibilityFilter)
         queryParams.append("pageSize", "100") // Fetch more orders at once
         
         const response = await fetch(`/api/orders?${queryParams.toString()}`)
@@ -111,7 +123,7 @@ export default function OrdersPage() {
     }
 
     fetchOrders()
-  }, [statusFilter])
+  }, [statusFilter, visibilityFilter])
 
   useEffect(() => {
     const filtered = orders.filter((order) => {
@@ -170,6 +182,106 @@ export default function OrdersPage() {
       const derivedCustomizationCost = item.totalPrice - item.unitPrice * item.quantity
       return total + Math.max(0, derivedCustomizationCost)
     }, 0)
+  }
+
+  const refreshOrders = async () => {
+    const queryParams = new URLSearchParams()
+    if (statusFilter !== "all") {
+      queryParams.append("status", statusFilter)
+    }
+    queryParams.append("visibility", visibilityFilter)
+    queryParams.append("pageSize", "100")
+
+    const response = await fetch(`/api/orders?${queryParams.toString()}`)
+    const result = await response.json()
+    if (response.ok && result.success && result.data) {
+      setOrders(result.data.data || [])
+    }
+  }
+
+  const handleRepeatOrder = (order: Order) => {
+    if (!order.items || order.items.length === 0) {
+      toast({
+        title: "No items to repeat",
+        description: "This order does not contain repeatable items.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const repeatedItems = order.items.map((item, index) => ({
+      id: `${item.productId}-${item.variantId || "base"}-${index}`,
+      productId: item.productId,
+      name: item.productName,
+      description: item.variantName ? `Variant: ${item.variantName}` : "Repeated from previous order",
+      price: item.unitPrice,
+      quantity: item.quantity,
+      image: item.productImageUrl,
+      customizable: !!item.customization,
+      customization: item.customization as any,
+    }))
+
+    replaceItems(repeatedItems)
+    toast({
+      title: "Order repeated",
+      description: "Previous items were added to your cart.",
+    })
+    router.push("/dashboard/cart")
+  }
+
+  const handleRemoveOrder = async (order: Order) => {
+    if (order.status !== "delivered" && order.status !== "cancelled") return
+    setActionOrderId(order.id)
+    try {
+      const response = await fetch(`/api/orders/${order.id}`, { method: "DELETE" })
+      const result = await response.json()
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Failed to remove order")
+      }
+
+      toast({
+        title: "Order removed",
+        description: "You can restore it anytime from Removed Orders.",
+      })
+      await refreshOrders()
+    } catch (error) {
+      toast({
+        title: "Failed to remove",
+        description: error instanceof Error ? error.message : "Try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setActionOrderId(null)
+    }
+  }
+
+  const handleRestoreOrder = async (orderId: string) => {
+    setActionOrderId(orderId)
+    try {
+      const response = await fetch(`/api/orders/${orderId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "restore" }),
+      })
+      const result = await response.json()
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Failed to restore order")
+      }
+
+      toast({
+        title: "Order restored",
+        description: "The order is back in your active orders list.",
+      })
+      await refreshOrders()
+    } catch (error) {
+      toast({
+        title: "Failed to restore",
+        description: error instanceof Error ? error.message : "Try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setActionOrderId(null)
+    }
   }
 
   if (loading) {
@@ -256,6 +368,15 @@ export default function OrdersPage() {
             <SelectItem value="cancelled">Cancelled</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={visibilityFilter} onValueChange={(value) => setVisibilityFilter(value as "active" | "removed")}>
+          <SelectTrigger className="w-full sm:w-52">
+            <SelectValue placeholder="Orders visibility" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active Orders</SelectItem>
+            <SelectItem value="removed">Removed Orders</SelectItem>
+          </SelectContent>
+        </Select>
       </motion.div>
 
       {/* Orders List */}
@@ -308,6 +429,39 @@ export default function OrdersPage() {
                       </div>
                       <p className="text-xs text-muted-foreground">{order.paymentMethod}</p>
                     </div>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => handleRepeatOrder(order)}
+                    >
+                      <RotateCcw className="h-4 w-4" />
+                      Repeat Order
+                    </Button>
+                    {visibilityFilter === "active" && (order.status === "delivered" || order.status === "cancelled") && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="gap-2 text-destructive hover:text-destructive"
+                        onClick={() => handleRemoveOrder(order)}
+                        disabled={actionOrderId === order.id}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        Remove
+                      </Button>
+                    )}
+                    {visibilityFilter === "removed" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => handleRestoreOrder(order.id)}
+                        disabled={actionOrderId === order.id}
+                      >
+                        <Undo2 className="h-4 w-4" />
+                        Restore
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"

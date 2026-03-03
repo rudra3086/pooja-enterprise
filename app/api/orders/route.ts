@@ -37,12 +37,18 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status")
+    const visibility = searchParams.get("visibility") || "active"
     const page = parseInt(searchParams.get("page") || "1")
     const pageSize = parseInt(searchParams.get("pageSize") || "10")
+
+    const onlyClientHidden = visibility === "removed"
+    const excludeClientHidden = visibility !== "removed"
 
     const { orders, total } = await getOrders({
       clientId,
       status: status || undefined,
+      excludeClientHidden,
+      onlyClientHidden,
       limit: pageSize,
       offset: (page - 1) * pageSize,
     })

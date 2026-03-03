@@ -24,6 +24,7 @@ export interface CartItem {
 interface CartContextType {
   items: CartItem[]
   addItem: (item: Omit<CartItem, "quantity"> & { quantity?: number }) => void
+  replaceItems: (items: CartItem[]) => void
   removeItem: (id: string) => void
   updateQuantity: (id: string, quantity: number) => void
   updateCustomization: (id: string, customization: Customization) => void
@@ -72,6 +73,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
     })
   }
 
+  const replaceItems = (nextItems: CartItem[]) => {
+    setItems(nextItems)
+  }
+
   const removeItem = (id: string) => {
     setItems((prev) => prev.filter((item) => item.id !== id))
   }
@@ -109,6 +114,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       value={{
         items,
         addItem,
+        replaceItems,
         removeItem,
         updateQuantity,
         updateCustomization,

@@ -181,6 +181,8 @@ export interface Order {
   deliveryCostPerKm?: number
   customerNotes?: string
   adminNotes?: string
+  adminHiddenAt?: Date
+  clientHiddenAt?: Date
   trackingNumber?: string
   shippedAt?: Date
   deliveredAt?: Date

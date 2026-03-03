@@ -35,7 +35,13 @@ export function LocationPicker({ value, onChange, heightClassName = "h-72" }: Lo
         document.head.appendChild(link)
       }
 
-      const L = await import("leaflet")
+      let L: typeof import("leaflet")
+      try {
+        L = await import(/* webpackMode: "eager" */ "leaflet")
+      } catch (error) {
+        console.error("Failed to load Leaflet", error)
+        return
+      }
       if (!active || !containerRef.current) return
 
       const markerIcon = L.divIcon({
