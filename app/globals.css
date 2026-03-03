@@ -537,10 +537,12 @@ html.dark video {
   }
 
   .home-scroll-slide {
-    position: sticky;
-    top: 0;
+    position: relative;
     min-height: 100vh;
     isolation: isolate;
+    will-change: transform;
+    backface-visibility: hidden;
+    transform: translateZ(0);
   }
 
 }

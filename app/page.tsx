@@ -4,6 +4,8 @@ import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { motion } from "framer-motion"
+import { gsap } from "gsap"
+import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { ArrowRight, Award, Clock, Heart, Mail, MapPin, Package, Phone, Send, Shield, Target, Truck, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -262,18 +264,16 @@ export default function HomePage() {
     }))
   }
 
+  const addressDetail = contactDetails.find((item) => item.title === "Address")
+  const groupedContactDetails = contactDetails.filter((item) => item.title !== "Address")
+
   const scrollToSection = (sectionId: string) => {
     const target = document.getElementById(sectionId)
     if (!target) return
     const headerElement = document.getElementById("site-header")
     const headerHeight = headerElement?.getBoundingClientRect().height ?? 80
-    const headerOffset = headerHeight + 30
-    let absoluteTop = 0
-    let current: HTMLElement | null = target
-    while (current) {
-      absoluteTop += current.offsetTop
-      current = current.offsetParent as HTMLElement | null
-    }
+    const headerOffset = headerHeight + 36
+    const absoluteTop = target.getBoundingClientRect().top + window.scrollY
     const top = Math.max(0, absoluteTop - headerOffset)
     window.scrollTo({ top, behavior: "smooth" })
   }
@@ -299,13 +299,8 @@ export default function HomePage() {
         if (target) {
           const headerElement = document.getElementById("site-header")
           const headerHeight = headerElement?.getBoundingClientRect().height ?? 80
-          const headerOffset = headerHeight + 30
-          let absoluteTop = 0
-          let current: HTMLElement | null = target
-          while (current) {
-            absoluteTop += current.offsetTop
-            current = current.offsetParent as HTMLElement | null
-          }
+          const headerOffset = headerHeight + 36
+          const absoluteTop = target.getBoundingClientRect().top + window.scrollY
           const top = Math.max(0, absoluteTop - headerOffset)
           window.scrollTo({ top, behavior: "smooth" })
           return
@@ -323,6 +318,56 @@ export default function HomePage() {
     scrollFromHash()
     window.addEventListener("hashchange", scrollFromHash)
     return () => window.removeEventListener("hashchange", scrollFromHash)
+  }, [])
+
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger)
+
+    const media = gsap.matchMedia()
+
+    media.add("(min-width: 1024px)", () => {
+      const cards = gsap.utils.toArray<HTMLElement>(".home-scroll-stack .home-scroll-slide")
+      if (!cards.length) return
+
+      cards.forEach((card) => {
+        gsap.set(card, { transformOrigin: "center top", force3D: true, willChange: "transform, opacity" })
+
+        gsap.fromTo(
+          card,
+          { opacity: 0.94, y: 20, scale: 0.992 },
+          {
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: 0.7,
+            ease: "power2.out",
+            overwrite: "auto",
+            scrollTrigger: {
+              trigger: card,
+              start: "top 88%",
+              end: "top 55%",
+              scrub: false,
+              once: true,
+              invalidateOnRefresh: false,
+            },
+          },
+        )
+
+        ScrollTrigger.create({
+          trigger: card,
+          start: "top bottom",
+          end: "bottom top",
+          onLeave: () => gsap.set(card, { clearProps: "willChange" }),
+          onEnterBack: () => gsap.set(card, { willChange: "transform, opacity" }),
+        })
+      })
+
+      ScrollTrigger.refresh()
+    })
+
+    return () => {
+      media.revert()
+    }
   }, [])
 
   return (
@@ -409,7 +454,7 @@ export default function HomePage() {
                     onClick={(event) => {
                       event.preventDefault()
                       window.history.replaceState(null, "", "/#products")
-                      scrollToSection("products")
+                      scrollToSection("products-anchor")
                     }}
                   >
                     <motion.div
@@ -557,7 +602,7 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ margin: "-100px", once: false }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="mb-16 text-center"
+                className="mb-16 text-center scroll-mt-28 lg:scroll-mt-32"
                 id="products-anchor"
               >
                 <div>
@@ -681,7 +726,7 @@ export default function HomePage() {
             viewport={{ margin: "-100px", once: false }}
             transition={{ duration: 0.7, ease: "easeOut" }}
             id="about"
-            className="z-60 relative py-24 lg:py-32 bg-muted"
+            className="home-scroll-slide z-60 relative py-24 lg:py-32 bg-muted"
           >
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <motion.div
@@ -689,7 +734,7 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ margin: "-100px", once: false }}
                 transition={{ duration: 0.6, ease: "easeOut" }}
-                className="text-center"
+                className="text-center scroll-mt-28 lg:scroll-mt-32"
                 id="about-anchor"
               >
                 <h2 className="font-display text-3xl font-bold sm:text-4xl tracking-tight">
@@ -744,10 +789,10 @@ export default function HomePage() {
               </motion.div>
 
               <motion.div
-                initial={false}
+                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ margin: "-50px", once: false }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
+                viewport={{ margin: "-50px", once: true }}
+                transition={{ duration: 0.55, ease: "easeOut" }}
                 className="mt-16"
               >
                 <h3 className="text-center font-display text-2xl font-bold tracking-tight sm:text-3xl">Our Journey</h3>
@@ -761,10 +806,10 @@ export default function HomePage() {
                     {aboutTimeline.map((item, index) => (
                       <motion.div
                         key={item.year}
-                        initial={false}
+                        initial={{ opacity: 0, y: 18 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ margin: "-40px", once: false }}
-                        transition={{ duration: 0.45, delay: index * 0.04 }}
+                        viewport={{ margin: "-40px", once: true }}
+                        transition={{ duration: 0.5, ease: "easeOut", delay: index * 0.06 }}
                         className="relative pl-10 sm:pl-0"
                       >
                         <div className="absolute left-1.5 top-6 h-3 w-3 rounded-full bg-primary sm:left-1/2 sm:-translate-x-1.5" />
@@ -784,11 +829,11 @@ export default function HomePage() {
           {/* Contact Section */}
           <section
             id="contact"
-            className="z-70 relative py-24 lg:py-32 bg-white"
+            className="home-scroll-slide z-70 relative py-24 lg:py-32 bg-white"
           >
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <div
-                className="text-center"
+                className="text-center scroll-mt-28 lg:scroll-mt-32"
                 id="contact-anchor"
               >
                 <h2 className="font-display text-3xl font-bold sm:text-4xl tracking-tight">Contact Us</h2>
@@ -883,29 +928,29 @@ export default function HomePage() {
                   className="rounded-2xl border border-border bg-card p-5 sm:p-6"
                 >
                   <h3 className="font-display text-xl font-bold tracking-tight">Contact Information</h3>
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
-                    {contactDetails.map((item) => (
-                      <div key={item.title} className="rounded-lg border border-border/70 bg-background/50 p-4">
+                  <div className="mt-4 grid gap-3">
+                    {addressDetail ? (
+                      <div className="rounded-lg border border-border/70 bg-background/50 p-4">
                         <div className="flex items-start gap-3">
                           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
-                            <item.icon className="h-4 w-4 text-foreground" />
+                            <addressDetail.icon className="h-4 w-4 text-foreground" />
                           </div>
                           <div>
-                            <h4 className="font-semibold leading-none">{item.title}</h4>
-                            {item.href ? (
+                            <h4 className="font-semibold leading-none">{addressDetail.title}</h4>
+                            {addressDetail.href ? (
                               <a
-                                href={item.href}
-                                target={item.external ? "_blank" : undefined}
-                                rel={item.external ? "noopener noreferrer" : undefined}
+                                href={addressDetail.href}
+                                target={addressDetail.external ? "_blank" : undefined}
+                                rel={addressDetail.external ? "noopener noreferrer" : undefined}
                                 className="mt-2 block space-y-1 text-sm text-muted-foreground leading-relaxed transition-colors hover:text-primary"
                               >
-                                {item.details.map((detail) => (
+                                {addressDetail.details.map((detail) => (
                                   <p key={detail} className="break-all">{detail}</p>
                                 ))}
                               </a>
                             ) : (
                               <div className="mt-2 space-y-1 text-sm text-muted-foreground leading-relaxed">
-                                {item.details.map((detail) => (
+                                {addressDetail.details.map((detail) => (
                                   <p key={detail} className="break-words">{detail}</p>
                                 ))}
                               </div>
@@ -913,7 +958,40 @@ export default function HomePage() {
                           </div>
                         </div>
                       </div>
-                    ))}
+                    ) : null}
+
+                    <div className="rounded-lg border border-border/70 bg-background/50 p-4">
+                      <div className="space-y-4">
+                        {groupedContactDetails.map((item) => (
+                          <div key={item.title} className="flex items-start gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted">
+                              <item.icon className="h-4 w-4 text-foreground" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold leading-none">{item.title}</h4>
+                              {item.href ? (
+                                <a
+                                  href={item.href}
+                                  target={item.external ? "_blank" : undefined}
+                                  rel={item.external ? "noopener noreferrer" : undefined}
+                                  className="mt-2 block space-y-1 text-sm text-muted-foreground leading-relaxed transition-colors hover:text-primary"
+                                >
+                                  {item.details.map((detail) => (
+                                    <p key={detail} className="break-all">{detail}</p>
+                                  ))}
+                                </a>
+                              ) : (
+                                <div className="mt-2 space-y-1 text-sm text-muted-foreground leading-relaxed">
+                                  {item.details.map((detail) => (
+                                    <p key={detail} className="break-words">{detail}</p>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
