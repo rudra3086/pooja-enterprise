@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 
 const navLinks = [
   { href: "/", label: "Home", sectionId: "__home__" },
-  { href: "/#products", label: "Products", sectionId: "products" },
+  { href: "/#products", label: "Products", sectionId: "products-anchor" },
   { href: "/#about", label: "About Us", sectionId: "about-anchor" },
   { href: "/#contact", label: "Contact", sectionId: "contact-anchor" },
 ]
@@ -26,11 +26,23 @@ export function Header() {
     return headerHeight + 30
   }
 
+  const getDocumentTop = (element: HTMLElement) => {
+    let top = 0
+    let current: HTMLElement | null = element
+
+    while (current) {
+      top += current.offsetTop
+      current = current.offsetParent as HTMLElement | null
+    }
+
+    return top
+  }
+
   const scrollToSection = (sectionId: string) => {
     const target = document.getElementById(sectionId)
     if (!target) return
     const headerOffset = getNavOffset()
-    const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - headerOffset)
+    const top = Math.max(0, getDocumentTop(target) - headerOffset)
     window.scrollTo({ top, behavior: "smooth" })
   }
 

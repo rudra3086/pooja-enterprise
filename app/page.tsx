@@ -268,12 +268,18 @@ export default function HomePage() {
     const headerElement = document.getElementById("site-header")
     const headerHeight = headerElement?.getBoundingClientRect().height ?? 80
     const headerOffset = headerHeight + 30
-    const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - headerOffset)
+    let absoluteTop = 0
+    let current: HTMLElement | null = target
+    while (current) {
+      absoluteTop += current.offsetTop
+      current = current.offsetParent as HTMLElement | null
+    }
+    const top = Math.max(0, absoluteTop - headerOffset)
     window.scrollTo({ top, behavior: "smooth" })
   }
 
   const resolveSectionAnchor = (hash: string) => {
-    if (hash === "products") return "products"
+    if (hash === "products") return "products-anchor"
     if (hash === "about") return "about-anchor"
     if (hash === "contact") return "contact-anchor"
     return hash
@@ -294,7 +300,13 @@ export default function HomePage() {
           const headerElement = document.getElementById("site-header")
           const headerHeight = headerElement?.getBoundingClientRect().height ?? 80
           const headerOffset = headerHeight + 30
-          const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - headerOffset)
+          let absoluteTop = 0
+          let current: HTMLElement | null = target
+          while (current) {
+            absoluteTop += current.offsetTop
+            current = current.offsetParent as HTMLElement | null
+          }
+          const top = Math.max(0, absoluteTop - headerOffset)
           window.scrollTo({ top, behavior: "smooth" })
           return
         }
@@ -420,7 +432,7 @@ export default function HomePage() {
                     onClick={(event) => {
                       event.preventDefault()
                       window.history.replaceState(null, "", "/#contact")
-                      scrollToSection("contact")
+                      scrollToSection("contact-anchor")
                     }}
                   >
                     <motion.div
@@ -942,7 +954,7 @@ export default function HomePage() {
                     onClick={(event) => {
                       event.preventDefault()
                       window.history.replaceState(null, "", "/#contact")
-                      scrollToSection("contact")
+                      scrollToSection("contact-anchor")
                     }}
                   >
                     <Button
