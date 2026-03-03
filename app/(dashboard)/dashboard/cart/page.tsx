@@ -13,8 +13,7 @@ import { useCart } from "@/lib/cart-context"
 export default function CartPage() {
   const { items, updateQuantity, removeItem, totalPrice, clearCart } = useCart()
   const gst = Math.round(totalPrice * 0.18)
-  const shippingAmount = totalPrice > 10000 ? 0 : 500
-  const grandTotal = totalPrice + gst + shippingAmount
+  const grandTotal = totalPrice + gst
 
   if (items.length === 0) {
     return (
@@ -201,12 +200,9 @@ export default function CartPage() {
                 <span>₹{gst}</span>
               </div>
 
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Shipping</span>
-                <span className={shippingAmount === 0 ? "text-green-600" : "text-foreground"}>
-                  {shippingAmount === 0 ? "Free" : `₹${shippingAmount}`}
-                </span>
-              </div>
+              <p className="text-xs text-muted-foreground">
+                Shipping charges will be calculated at checkout based on delivery location.
+              </p>
 
               <Separator />
 

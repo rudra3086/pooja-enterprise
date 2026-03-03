@@ -75,7 +75,7 @@ export default function DashboardLayout({
     <CartProvider>
       <div className="min-h-screen bg-background">
         {/* Header */}
-        <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+        <header className="sticky top-0 z-[1200] bg-background/80 backdrop-blur-md border-b border-border">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="flex h-16 items-center justify-between">
               {/* Logo */}

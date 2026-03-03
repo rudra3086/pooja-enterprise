@@ -98,8 +98,8 @@ export function LocationPicker({ value, onChange, heightClassName = "h-72" }: Lo
   }, [value?.latitude, value?.longitude])
 
   return (
-    <div className={`w-full overflow-hidden rounded-md border border-border ${heightClassName}`}>
-      <div ref={containerRef} className="h-full w-full" />
+    <div className={`location-picker-root w-full overflow-hidden rounded-md border border-border ${heightClassName}`}>
+      <div ref={containerRef} className="location-picker-map h-full w-full" />
     </div>
   )
 }
