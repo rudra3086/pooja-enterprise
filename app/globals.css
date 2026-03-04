@@ -327,6 +327,10 @@ html.dark video {
                 inset 100px 100px 200px rgba(0, 0, 0, 0.02);
   }
 
+  .dark .bg-hero-tissue-watermark-large::before {
+    opacity: 0.14;
+  }
+
   .bg-client-login-watermark {
     background: linear-gradient(135deg, #fafafa 0%, #ffffff 25%, #f0f0f0 50%, #ffffff 75%, #fafafa 100%);
     background-size: 400% 400%;
