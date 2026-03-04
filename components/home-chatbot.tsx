@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { Loader2, MessageCircle, Moon, Send, Sparkles, Sun, X } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
@@ -24,14 +24,19 @@ const INITIAL_MESSAGE: ChatMessage = {
 
 export function HomeChatbot() {
   const { theme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [open, setOpen] = useState(false)
   const [input, setInput] = useState("")
   const [sending, setSending] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE])
   const viewportRef = useRef<HTMLDivElement | null>(null)
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   const canSend = useMemo(() => input.trim().length > 0 && !sending, [input, sending])
-  const isDark = theme === "dark"
+  const isDark = mounted && theme === "dark"
 
   const scrollToBottom = () => {
     window.requestAnimationFrame(() => {
@@ -158,8 +163,8 @@ export function HomeChatbot() {
           type="button"
           className={`inline-flex h-11 w-11 items-center justify-center ${isDark ? "bg-white text-black" : "bg-black text-white"}`}
           onClick={() => setTheme(isDark ? "light" : "dark")}
-          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+          aria-label={mounted ? (isDark ? "Switch to light mode" : "Switch to dark mode") : "Toggle theme"}
+          title={mounted ? (isDark ? "Switch to light mode" : "Switch to dark mode") : "Toggle theme"}
         >
           {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
