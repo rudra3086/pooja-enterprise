@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { motion } from "framer-motion"
@@ -201,6 +201,14 @@ const KineticText = ({ text, className = "", style = {} }: { text: string; class
 
 export default function HomePage() {
   const { toast } = useToast()
+  const introRef = useRef<HTMLDivElement | null>(null)
+  const homeRef = useRef<HTMLDivElement | null>(null)
+  const watermarkRef = useRef<HTMLDivElement | null>(null)
+  const introLogoRef = useRef<HTMLDivElement | null>(null)
+  const leftLineRef = useRef<SVGLineElement | null>(null)
+  const rightLineRef = useRef<SVGLineElement | null>(null)
+  const circleRef = useRef<SVGCircleElement | null>(null)
+  const [introState, setIntroState] = useState<"playing" | "done">("playing")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [flippedProducts, setFlippedProducts] = useState<Record<string, boolean>>({})
   const [formData, setFormData] = useState({
@@ -321,6 +329,92 @@ export default function HomePage() {
   }, [])
 
   useEffect(() => {
+    if (introState !== "playing") return
+
+    const introElement = introRef.current
+    const homeElement = homeRef.current
+    const watermarkElement = watermarkRef.current
+    const introLogoElement = introLogoRef.current
+    const leftLine = leftLineRef.current
+    const rightLine = rightLineRef.current
+    const circle = circleRef.current
+
+    if (!introElement || !homeElement || !watermarkElement || !introLogoElement || !leftLine || !rightLine || !circle) {
+      return
+    }
+
+    const circleLength = circle.getTotalLength()
+
+    gsap.set(homeElement, { autoAlpha: 0 })
+    gsap.set(introElement, { autoAlpha: 1 })
+    gsap.set(leftLine, { attr: { x1: 0, x2: 0 }, autoAlpha: 1 })
+    gsap.set(rightLine, { attr: { x1: 1000, x2: 1000 }, autoAlpha: 1 })
+    gsap.set(circle, {
+      autoAlpha: 0,
+      strokeDasharray: circleLength,
+      strokeDashoffset: circleLength,
+      transformOrigin: "50% 50%",
+      scale: 0.86,
+    })
+    gsap.set(introLogoElement, {
+      autoAlpha: 0,
+      scale: 0.86,
+      x: 0,
+      y: 0,
+      width: 160,
+      height: 160,
+      transformOrigin: "50% 50%",
+    })
+
+    const timeline = gsap.timeline({ defaults: { ease: "power3.inOut" } })
+
+    timeline
+      .to(leftLine, { attr: { x2: 500 }, duration: 1.05 })
+      .to(rightLine, { attr: { x2: 500 }, duration: 1.05 }, "<")
+      .to(circle, { autoAlpha: 1, duration: 0.15 }, "-=0.02")
+      .to(circle, { strokeDashoffset: 0, scale: 1, duration: 0.7 }, "<")
+      .to(introLogoElement, { autoAlpha: 1, scale: 1, duration: 0.45 }, "-=0.1")
+      .to(introLogoElement, {
+        scale: () => {
+          const logoRect = introLogoElement.getBoundingClientRect()
+          const targetRect = watermarkElement.getBoundingClientRect()
+          return (targetRect.width / logoRect.width) * 1.1
+        },
+        duration: 0.5,
+        onStart: () => {
+          gsap.to([leftLine, rightLine], { autoAlpha: 0, duration: 0.25, ease: "power3.inOut" })
+          gsap.to(circle, { autoAlpha: 0, duration: 0.25, ease: "power3.inOut" })
+        },
+      })
+      .to(introLogoElement, {
+        x: () => {
+          const logoRect = introLogoElement.getBoundingClientRect()
+          const targetRect = watermarkElement.getBoundingClientRect()
+          return targetRect.left + targetRect.width / 2 - (logoRect.left + logoRect.width / 2)
+        },
+        y: () => {
+          const logoRect = introLogoElement.getBoundingClientRect()
+          const targetRect = watermarkElement.getBoundingClientRect()
+          return targetRect.top + targetRect.height / 2 - (logoRect.top + logoRect.height / 2)
+        },
+        duration: 1,
+      })
+      .to(homeElement, { autoAlpha: 1, duration: 1.2 })
+      .to(introElement, {
+        autoAlpha: 0,
+        duration: 1.1,
+        onComplete: () => {
+          setIntroState("done")
+        },
+      }, "<")
+      .to(introLogoElement, { autoAlpha: 0, duration: 1.15, ease: "power2.inOut" }, "<+0.45")
+
+    return () => {
+      timeline.kill()
+    }
+  }, [introState])
+
+  useEffect(() => {
     gsap.registerPlugin(ScrollTrigger)
 
     const media = gsap.matchMedia()
@@ -372,11 +466,69 @@ export default function HomePage() {
 
   return (
     <>
-      <AdvancedCustomCursor cursorSize={45} />
-      <Header />
-      <main className="pt-16 lg:pt-20">
-        <PageTransition>
-          <div className="home-scroll-stack">
+      {introState === "playing" && (
+        <div id="intro" ref={introRef} className="fixed inset-0 z-[3000] bg-white">
+          <svg className="absolute inset-0 h-full w-full" viewBox="0 0 1000 100" preserveAspectRatio="none" aria-hidden="true">
+            <line
+              ref={leftLineRef}
+              x1="0"
+              y1="50"
+              x2="0"
+              y2="50"
+              stroke="black"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+            <line
+              ref={rightLineRef}
+              x1="1000"
+              y1="50"
+              x2="1000"
+              y2="50"
+              stroke="black"
+              strokeWidth="3"
+              strokeLinecap="round"
+            />
+          </svg>
+
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-hidden="true">
+            <svg className="h-56 w-56 sm:h-64 sm:w-64" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet">
+            <circle
+              ref={circleRef}
+              cx="100"
+              cy="100"
+              r="80"
+              fill="none"
+              stroke="black"
+              strokeWidth="3"
+              opacity="0"
+            />
+          </svg>
+          </div>
+
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div ref={introLogoRef} className="h-40 w-40 opacity-0 sm:h-44 sm:w-44">
+              <svg viewBox="0 0 140 140" className="h-full w-full" aria-hidden="true">
+                <defs>
+                  <clipPath id="introLogoClip">
+                    <circle cx="70" cy="70" r="64" />
+                  </clipPath>
+                </defs>
+                <circle cx="70" cy="70" r="64" fill="white" />
+                <image href="/icon.svg" x="6" y="6" width="128" height="128" preserveAspectRatio="xMidYMid slice" clipPath="url(#introLogoClip)" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div id="home" ref={homeRef} className="relative" style={{ opacity: introState === "done" ? 1 : 0 }}>
+        <AdvancedCustomCursor cursorSize={45} />
+
+        <Header />
+        <main className="pt-16 lg:pt-20">
+          <PageTransition>
+            <div className="home-scroll-stack">
           {/* Hero Section - Modern Kinetic Typography */}
           <motion.section 
             initial={{ opacity: 0, y: 40 }}
@@ -385,6 +537,12 @@ export default function HomePage() {
             transition={{ duration: 0.7, ease: "easeOut" }}
             className="home-scroll-slide z-10 relative overflow-hidden bg-hero-tissue-watermark-large"
           >
+            <div
+              ref={watermarkRef}
+              id="home-watermark-logo"
+              className="pointer-events-none absolute left-1/2 top-1/2 z-0 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 opacity-0"
+              aria-hidden="true"
+            />
             <div className="absolute inset-0 bg-grid-pattern opacity-5 z-0" />
             <div className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8 lg:py-20 z-10">
               <motion.div
@@ -1079,11 +1237,12 @@ export default function HomePage() {
               </div>
             </div>
           </section>
-          </div>
-        </PageTransition>
-      </main>
-      <Footer />
-      <Toaster />
+            </div>
+          </PageTransition>
+        </main>
+        <Footer />
+        <Toaster />
+      </div>
     </>
   )
 }
