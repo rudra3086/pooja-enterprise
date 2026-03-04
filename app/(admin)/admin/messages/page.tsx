@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { Mail, Reply, Clock, Trash2 } from "lucide-react"
+import { Mail, Reply, Clock, Trash2, Sparkles } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +28,7 @@ export default function AdminMessagesPage() {
   const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null)
   const [replyText, setReplyText] = useState("")
   const [replying, setReplying] = useState(false)
+  const [generatingDraft, setGeneratingDraft] = useState(false)
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null)
   const [bulkDeleting, setBulkDeleting] = useState<"all" | "replied" | null>(null)
 
@@ -98,6 +99,40 @@ export default function AdminMessagesPage() {
       toast({ title: "Error", description: "Failed to send reply", variant: "destructive" })
     } finally {
       setReplying(false)
+    }
+  }
+
+  const handleGenerateAiDraft = async () => {
+    if (!selectedMessage) return
+
+    try {
+      setGeneratingDraft(true)
+      const response = await fetch(`/api/admin/contact/${selectedMessage.id}/ai-draft`, {
+        method: "POST",
+      })
+      const data = await response.json()
+
+      if (data.success && data.data?.draft) {
+        setReplyText(data.data.draft)
+        toast({
+          title: "AI draft ready",
+          description: "Draft generated. Review and edit before sending.",
+        })
+      } else {
+        toast({
+          title: "AI draft failed",
+          description: data.error || "Could not generate draft right now.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "AI draft failed",
+        description: "Could not generate draft right now.",
+        variant: "destructive",
+      })
+    } finally {
+      setGeneratingDraft(false)
     }
   }
 
@@ -267,6 +302,19 @@ export default function AdminMessagesPage() {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">This reply will be sent to {selectedMessage?.email}</p>
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                onClick={handleGenerateAiDraft}
+                disabled={generatingDraft || replying}
+              >
+                <Sparkles className="h-4 w-4" />
+                {generatingDraft ? "Generating..." : "Generate AI Draft"}
+              </Button>
+            </div>
             <Textarea
               rows={7}
               placeholder="Type your reply..."

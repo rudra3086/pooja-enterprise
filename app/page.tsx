@@ -16,6 +16,7 @@ import { Header } from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { PageTransition } from "@/components/layout/page-transition"
 import { AdvancedCustomCursor } from "@/components/advanced-custom-cursor"
+import { HomeChatbot } from "@/components/home-chatbot"
 import { useToast } from "@/hooks/use-toast"
 
 const features = [
@@ -1242,6 +1243,7 @@ export default function HomePage() {
         </main>
         <Footer />
         <Toaster />
+        <HomeChatbot />
       </div>
     </>
   )

@@ -109,7 +109,7 @@ export function Footer() {
             </p>
             <Link
               href="/admin/login"
-              className="text-sm text-primary-foreground/40 hover:text-primary-foreground/70 transition-colors"
+              className="text-sm text-primary-foreground/40 hover:text-primary-foreground/70 transition-colors sm:mr-4"
             >
               Admin
             </Link>
