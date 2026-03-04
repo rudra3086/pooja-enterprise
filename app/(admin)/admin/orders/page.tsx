@@ -255,65 +255,70 @@ export default function AdminOrdersPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="flex flex-col sm:flex-row gap-4"
+        className="space-y-3"
       >
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by order number or customer..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by order number or customer..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Orders</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="processing">Processing</SelectItem>
+              <SelectItem value="shipped">Shipped</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={viewMode} onValueChange={(value) => setViewMode(value as "active" | "removed") }>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder="View" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active Orders</SelectItem>
+              <SelectItem value="removed">Removed Orders</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-48">
-            <Filter className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Orders</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="confirmed">Confirmed</SelectItem>
-            <SelectItem value="processing">Processing</SelectItem>
-            <SelectItem value="shipped">Shipped</SelectItem>
-            <SelectItem value="delivered">Delivered</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={viewMode} onValueChange={(value) => setViewMode(value as "active" | "removed") }>
-          <SelectTrigger className="w-full sm:w-48">
-            <SelectValue placeholder="View" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="active">Active Orders</SelectItem>
-            <SelectItem value="removed">Removed Orders</SelectItem>
-          </SelectContent>
-        </Select>
-      </motion.div>
 
-      {viewMode === "active" && (
-        <div className="flex flex-wrap gap-3">
-          <Button
-            variant="outline"
-            className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-            onClick={() => handleBulkDelete("delivered")}
-            disabled={bulkDeleting !== null || loading}
-          >
-            <Trash2 className="h-4 w-4" />
-            {bulkDeleting === "delivered" ? "Deleting..." : "Delete Delivered"}
-          </Button>
-          <Button
-            variant="outline"
-            className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-            onClick={() => handleBulkDelete("cancelled")}
-            disabled={bulkDeleting !== null || loading}
-          >
-            <Trash2 className="h-4 w-4" />
-            {bulkDeleting === "cancelled" ? "Deleting..." : "Delete Cancelled"}
-          </Button>
-        </div>
-      )}
+        {viewMode === "active" && (
+          <div className="flex flex-col gap-2 rounded-lg border border-border bg-card/50 p-3 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Bulk Cleanup</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => handleBulkDelete("delivered")}
+              disabled={bulkDeleting !== null || loading}
+            >
+              <Trash2 className="h-4 w-4" />
+              {bulkDeleting === "delivered" ? "Deleting..." : "Delete Delivered"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => handleBulkDelete("cancelled")}
+              disabled={bulkDeleting !== null || loading}
+            >
+              <Trash2 className="h-4 w-4" />
+              {bulkDeleting === "cancelled" ? "Deleting..." : "Delete Cancelled"}
+            </Button>
+          </div>
+        )}
+      </motion.div>
 
       {/* Orders Table */}
       <motion.div

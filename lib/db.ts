@@ -2198,6 +2198,34 @@ export async function hideOrderForClient(orderId: string, clientId: string): Pro
   return result.affectedRows > 0
 }
 
+export async function hideOrdersForClient(options: {
+  clientId: string
+  status?: Order["status"]
+}): Promise<number> {
+  await ensureDeliverySchema()
+
+  if (options.status) {
+    const result = await execute(
+      `UPDATE orders
+       SET client_hidden_at = NOW(), updated_at = NOW()
+       WHERE client_id = ?
+         AND status = ?
+         AND client_hidden_at IS NULL`,
+      [options.clientId, options.status]
+    )
+    return result.affectedRows
+  }
+
+  const result = await execute(
+    `UPDATE orders
+     SET client_hidden_at = NOW(), updated_at = NOW()
+     WHERE client_id = ?
+       AND client_hidden_at IS NULL`,
+    [options.clientId]
+  )
+  return result.affectedRows
+}
+
 export async function restoreOrderForClient(orderId: string, clientId: string): Promise<boolean> {
   await ensureDeliverySchema()
   const result = await execute(

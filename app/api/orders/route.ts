@@ -9,7 +9,8 @@ import {
   getProductById,
   getVariantById,
   getDeliverySettings,
-  calculateDistanceKm
+  calculateDistanceKm,
+  hideOrdersForClient
 } from "@/lib/db"
 import type { ApiResponse, Order, CreateOrderRequest, PaginatedResponse } from "@/lib/types"
 
@@ -273,6 +274,47 @@ export async function POST(request: NextRequest) {
     const errorMessage = error instanceof Error ? error.message : "Failed to create order"
     return NextResponse.json<ApiResponse>(
       { success: false, error: `Failed to create order: ${errorMessage}` },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE /api/orders?scope=delivered|cancelled - Hide all matching client orders from client view
+export async function DELETE(request: NextRequest) {
+  try {
+    const clientId = await getClientIdFromRequest(request)
+
+    if (!clientId) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const scope = searchParams.get("scope")
+
+    if (scope !== "delivered" && scope !== "cancelled") {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: "Invalid delete scope. Use 'delivered' or 'cancelled'." },
+        { status: 400 }
+      )
+    }
+
+    const hiddenCount = await hideOrdersForClient({
+      clientId,
+      status: scope as Order["status"],
+    })
+
+    return NextResponse.json<ApiResponse<{ hiddenCount: number }>>({
+      success: true,
+      data: { hiddenCount },
+      message: `Removed ${hiddenCount} order(s) from your view successfully`,
+    })
+  } catch (error) {
+    console.error("Client bulk remove orders error:", error)
+    return NextResponse.json<ApiResponse>(
+      { success: false, error: "Failed to remove orders" },
       { status: 500 }
     )
   }

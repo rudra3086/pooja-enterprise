@@ -83,6 +83,7 @@ export default function OrdersPage() {
   const [visibilityFilter, setVisibilityFilter] = useState<"active" | "removed">("active")
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [actionOrderId, setActionOrderId] = useState<string | null>(null)
+  const [bulkDeleting, setBulkDeleting] = useState<"delivered" | "cancelled" | null>(null)
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -284,6 +285,37 @@ export default function OrdersPage() {
     }
   }
 
+  const handleBulkRemove = async (scope: "delivered" | "cancelled") => {
+    const label = scope === "delivered" ? "all delivered orders" : "all cancelled orders"
+    const confirmed = window.confirm(`Remove ${label} from your orders list?`)
+    if (!confirmed) return
+
+    try {
+      setBulkDeleting(scope)
+      const response = await fetch(`/api/orders?scope=${scope}`, { method: "DELETE" })
+      const result = await response.json()
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || "Failed to remove orders")
+      }
+
+      toast({
+        title: "Cleanup completed",
+        description: `${result.data?.hiddenCount ?? 0} order(s) removed from your list.`,
+      })
+
+      await refreshOrders()
+    } catch (error) {
+      toast({
+        title: "Failed to remove",
+        description: error instanceof Error ? error.message : "Try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setBulkDeleting(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-8">
@@ -343,40 +375,68 @@ export default function OrdersPage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="flex flex-col sm:flex-row gap-4"
+        className="space-y-3"
       >
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search order number..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search order number..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <Filter className="h-4 w-4 mr-2" />
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Orders</SelectItem>
+              <SelectItem value="pending">Pending</SelectItem>
+              <SelectItem value="confirmed">Confirmed</SelectItem>
+              <SelectItem value="shipped">Shipped</SelectItem>
+              <SelectItem value="delivered">Delivered</SelectItem>
+              <SelectItem value="cancelled">Cancelled</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={visibilityFilter} onValueChange={(value) => setVisibilityFilter(value as "active" | "removed")}>
+            <SelectTrigger className="w-full sm:w-52">
+              <SelectValue placeholder="Orders visibility" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active Orders</SelectItem>
+              <SelectItem value="removed">Removed Orders</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-48">
-            <Filter className="h-4 w-4 mr-2" />
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Orders</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="confirmed">Confirmed</SelectItem>
-            <SelectItem value="shipped">Shipped</SelectItem>
-            <SelectItem value="delivered">Delivered</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={visibilityFilter} onValueChange={(value) => setVisibilityFilter(value as "active" | "removed")}>
-          <SelectTrigger className="w-full sm:w-52">
-            <SelectValue placeholder="Orders visibility" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="active">Active Orders</SelectItem>
-            <SelectItem value="removed">Removed Orders</SelectItem>
-          </SelectContent>
-        </Select>
+
+        {visibilityFilter === "active" && (
+          <div className="flex flex-col gap-2 rounded-lg border border-border bg-card/50 p-3 sm:flex-row sm:items-center sm:justify-end sm:gap-3">
+            <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Bulk Cleanup</span>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => handleBulkRemove("delivered")}
+              disabled={bulkDeleting !== null || loading}
+            >
+              <Trash2 className="h-4 w-4" />
+              {bulkDeleting === "delivered" ? "Deleting..." : "Delete Delivered"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={() => handleBulkRemove("cancelled")}
+              disabled={bulkDeleting !== null || loading}
+            >
+              <Trash2 className="h-4 w-4" />
+              {bulkDeleting === "cancelled" ? "Deleting..." : "Delete Cancelled"}
+            </Button>
+          </div>
+        )}
       </motion.div>
 
       {/* Orders List */}
@@ -432,7 +492,7 @@ export default function OrdersPage() {
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="gap-2"
+                      className="gap-2 hover:bg-foreground hover:text-background dark:hover:bg-secondary dark:hover:text-secondary-foreground"
                       onClick={() => handleRepeatOrder(order)}
                     >
                       <RotateCcw className="h-4 w-4" />

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import { Menu, X, User } from "lucide-react"
@@ -17,6 +17,7 @@ const navLinks = [
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [activeSectionId, setActiveSectionId] = useState("__home__")
   const pathname = usePathname()
   const router = useRouter()
 
@@ -54,6 +55,7 @@ export function Header() {
 
     if (pathname === "/") {
       event.preventDefault()
+      setActiveSectionId(link.sectionId)
       if (link.sectionId === "__home__") {
         window.scrollTo({ top: 0, behavior: "smooth" })
         window.history.replaceState(null, "", "/")
@@ -67,6 +69,56 @@ export function Header() {
 
     setIsMenuOpen(false)
   }
+
+  useEffect(() => {
+    if (pathname !== "/") {
+      setActiveSectionId("")
+      return
+    }
+
+    const hash = window.location.hash.replace("#", "")
+    if (hash) {
+      setActiveSectionId(hash)
+      return
+    }
+
+    setActiveSectionId("__home__")
+  }, [pathname])
+
+  useEffect(() => {
+    if (pathname !== "/") return
+
+    const sectionOrder = navLinks
+      .map((link) => link.sectionId)
+      .filter((sectionId): sectionId is string => Boolean(sectionId && sectionId !== "__home__"))
+
+    const updateActiveSection = () => {
+      const offset = getNavOffset() + 40
+      const scrollPosition = window.scrollY + offset
+
+      let nextActive = "__home__"
+
+      for (const sectionId of sectionOrder) {
+        const section = document.getElementById(sectionId)
+        if (!section) continue
+        const sectionTop = section.getBoundingClientRect().top + window.scrollY
+        if (sectionTop <= scrollPosition) {
+          nextActive = sectionId
+        }
+      }
+
+      setActiveSectionId((previous) => (previous === nextActive ? previous : nextActive))
+    }
+
+    updateActiveSection()
+    window.addEventListener("scroll", updateActiveSection, { passive: true })
+    window.addEventListener("resize", updateActiveSection)
+
+    return () => {
+      window.removeEventListener("scroll", updateActiveSection)
+      window.removeEventListener("resize", updateActiveSection)
+    }
+  }, [pathname])
 
   return (
     <header id="site-header" className="fixed top-0 left-0 right-0 z-[200] bg-background/80 backdrop-blur-md border-b border-border">
@@ -88,16 +140,23 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex lg:items-center lg:gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                onClick={(event) => handleNavClick(event, link)}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              const isActive = pathname === "/" && activeSectionId === link.sectionId
+
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`nav-hover-lines text-sm font-medium transition-colors hover:text-foreground ${
+                    isActive ? "text-foreground" : "text-muted-foreground"
+                  }`}
+                  onClick={(event) => handleNavClick(event, link)}
+                >
+                  {link.label}
+                </Link>
+              )
+            })}
           </nav>
 
           {/* Desktop Actions */}
@@ -136,16 +195,23 @@ export function Header() {
             className="lg:hidden border-t border-border bg-background"
           >
             <nav className="flex flex-col px-4 py-4 gap-2">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-                  onClick={(event) => handleNavClick(event, link)}
-                >
-                  {link.label}
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+                const isActive = pathname === "/" && activeSectionId === link.sectionId
+
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`nav-hover-lines py-2 text-sm font-medium transition-colors hover:text-foreground ${
+                      isActive ? "text-foreground" : "text-muted-foreground"
+                    }`}
+                    onClick={(event) => handleNavClick(event, link)}
+                  >
+                    {link.label}
+                  </Link>
+                )
+              })}
               <div className="flex flex-col gap-2 pt-4 border-t border-border mt-2">
                 <Link href="/login" onClick={() => setIsMenuOpen(false)}>
                   <Button variant="ghost" size="sm" className="w-full justify-start gap-2 hover:bg-accent hover:text-accent-foreground">
