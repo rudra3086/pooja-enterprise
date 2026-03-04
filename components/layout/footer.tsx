@@ -1,21 +1,57 @@
+"use client"
+
 import Link from "next/link"
+import { usePathname } from "next/navigation"
+import type { MouseEvent } from "react"
 import { Mail, Phone, MapPin } from "lucide-react"
 
 const footerLinks = {
   company: [
-    { href: "/about", label: "About Us" },
-    { href: "/products", label: "Products" },
-    { href: "/contact", label: "Contact" },
+    { href: "/#about", label: "About Us" },
+    { href: "/#products", label: "Products" },
+    { href: "/#contact", label: "Contact" },
   ],
   products: [
-    { href: "/products#prod-1", label: "Tissue Napkin" },
-    { href: "/products#prod-2", label: "Tissue Roll" },
-    { href: "/products#prod-3", label: "Ultra Soft Tissue" },
-    { href: "/products#prod-4", label: "Aluminium Foil" },
+    { href: "/#products", label: "Tissue Napkin" },
+    { href: "/#products", label: "Tissue Roll" },
+    { href: "/#products", label: "Ultra Soft Tissue" },
+    { href: "/#products", label: "Aluminium Foil" },
   ],
 }
 
 export function Footer() {
+  const pathname = usePathname()
+
+  const handleSectionLinkClick = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (pathname !== "/") return
+
+    const hash = href.split("#")[1]
+    if (!hash) return
+
+    const sectionId =
+      hash === "products"
+        ? "products-anchor"
+        : hash === "about"
+          ? "about-anchor"
+          : hash === "contact"
+            ? "contact-anchor"
+            : ""
+
+    if (!sectionId) return
+
+    const target = document.getElementById(sectionId)
+    if (!target) return
+
+    event.preventDefault()
+
+    const headerElement = document.getElementById("site-header")
+    const headerHeight = headerElement?.getBoundingClientRect().height ?? 80
+    const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - (headerHeight + 36))
+
+    window.history.replaceState(null, "", `/#${hash}`)
+    window.scrollTo({ top, behavior: "smooth" })
+  }
+
   return (
     <footer className="theme-preserve bg-black text-white dark:bg-zinc-800">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -38,6 +74,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
+                    onClick={(event) => handleSectionLinkClick(event, link.href)}
                     className="text-sm text-primary-foreground/70 transition-colors hover:text-primary-foreground"
                   >
                     {link.label}
@@ -55,6 +92,7 @@ export function Footer() {
                 <li key={link.href}>
                   <Link
                     href={link.href}
+                    onClick={(event) => handleSectionLinkClick(event, link.href)}
                     className="text-sm text-primary-foreground/70 transition-colors hover:text-primary-foreground"
                   >
                     {link.label}
