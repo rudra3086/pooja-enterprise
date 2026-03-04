@@ -1019,6 +1019,174 @@ html.dark video {
     }
   }
 
+  .industries-preview-grid {
+    isolation: isolate;
+  }
+
+  .industries-serve-section {
+    --industries-section-bg: color-mix(in oklch, var(--muted) 65%, var(--background));
+    background: var(--industries-section-bg);
+    transition: background-color 0.35s ease, background 0.35s ease;
+  }
+
+  .industries-serve-section:has(.industries-preview-card[data-industry='Hospitals']:hover, .industries-preview-card[data-industry='Hospitals']:focus-within) {
+    --industries-section-bg: color-mix(in oklch, var(--chart-2) 30%, var(--background));
+  }
+
+  .industries-serve-section:has(.industries-preview-card[data-industry='Hotels']:hover, .industries-preview-card[data-industry='Hotels']:focus-within) {
+    --industries-section-bg: color-mix(in oklch, var(--chart-4) 26%, var(--background));
+  }
+
+  .industries-serve-section:has(.industries-preview-card[data-industry='Restaurants']:hover, .industries-preview-card[data-industry='Restaurants']:focus-within) {
+    --industries-section-bg: color-mix(in oklch, var(--chart-1) 24%, var(--background));
+  }
+
+  .industries-serve-section:has(.industries-preview-card[data-industry='Corporate Offices']:hover, .industries-preview-card[data-industry='Corporate Offices']:focus-within) {
+    --industries-section-bg: color-mix(in oklch, var(--chart-5) 24%, var(--background));
+  }
+
+  .industries-serve-section:has(.industries-preview-card[data-industry='Retail Stores']:hover, .industries-preview-card[data-industry='Retail Stores']:focus-within) {
+    --industries-section-bg: color-mix(in oklch, var(--secondary) 72%, var(--background));
+  }
+
+  .industries-serve-section:has(.industries-preview-card[data-industry='Event Management']:hover, .industries-preview-card[data-industry='Event Management']:focus-within) {
+    --industries-section-bg: color-mix(in oklch, var(--chart-3) 30%, var(--background));
+  }
+
+  .industries-preview-grid:has(.industries-preview-card:hover, .industries-preview-card:focus-within) .industries-preview-card:not(:hover, :focus-within) {
+    opacity: 0.44;
+  }
+
+  .industries-preview-card {
+    --industries-rotate: -3deg;
+    --industries-y-end: 86%;
+    --industries-duration: 6.2s;
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 24px color-mix(in oklch, var(--foreground) 8%, transparent);
+    filter: grayscale(100%) sepia(6%);
+    mix-blend-mode: multiply;
+    opacity: 0.72;
+    transform: translateY(0) scale(0.92) rotate(var(--industries-rotate));
+    outline: 6px solid var(--background);
+    outline-offset: 6px;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.3s ease,
+      filter 0.3s ease,
+      outline-offset 0.3s ease,
+      opacity 0.3s ease,
+      transform 0.3s ease,
+      z-index 0.15s ease;
+    position: relative;
+    height: 19rem;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .industries-preview-card:hover,
+  .industries-preview-card:focus-within {
+    border-color: color-mix(in oklch, var(--accent) 40%, var(--border));
+    box-shadow: 0 24px 56px color-mix(in oklch, var(--foreground) 20%, transparent);
+    filter: none;
+    mix-blend-mode: normal;
+    opacity: 1;
+    outline-offset: 3px;
+    transform: translateY(-5px) scale(1) rotate(0deg);
+    z-index: 7;
+  }
+
+  .industries-preview-card:hover {
+    transform: translateY(-8px) scale(1.07) rotate(0deg);
+    z-index: 8;
+  }
+
+  .industries-preview-card:focus-visible {
+    outline-color: color-mix(in oklch, var(--accent) 28%, var(--background));
+  }
+
+  .industries-preview-media {
+    flex-shrink: 0;
+    border: 1px solid color-mix(in oklch, var(--border) 86%, transparent);
+    background: var(--muted);
+  }
+
+  .industries-preview-description {
+    line-height: 1.45;
+  }
+
+  .industries-preview-content {
+    margin-top: auto;
+  }
+
+  .industries-preview-image {
+    object-position: 50% 0%;
+    animation: industries-preview-pan var(--industries-duration) ease-out forwards;
+    transition: transform 0.3s ease;
+  }
+
+  .industries-preview-card:hover .industries-preview-image,
+  .industries-preview-card:focus-within .industries-preview-image {
+    transform: scale(1.05);
+  }
+
+  .industries-preview-card:hover .industries-preview-description {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+  }
+
+  .industries-preview-card:nth-child(1) {
+    --industries-rotate: -4deg;
+    --industries-y-end: 64%;
+    --industries-duration: 6s;
+  }
+
+  .industries-preview-card:nth-child(2) {
+    --industries-rotate: 3deg;
+    --industries-y-end: 72%;
+    --industries-duration: 6.3s;
+  }
+
+  .industries-preview-card:nth-child(3) {
+    --industries-rotate: -1deg;
+    --industries-y-end: 82%;
+    --industries-duration: 6.6s;
+  }
+
+  .industries-preview-card:nth-child(4) {
+    --industries-rotate: -5deg;
+    --industries-y-end: 86%;
+    --industries-duration: 6.9s;
+  }
+
+  .industries-preview-card:nth-child(5) {
+    --industries-rotate: -2deg;
+    --industries-y-end: 74%;
+    --industries-duration: 7.1s;
+  }
+
+  .industries-preview-card:nth-child(6) {
+    --industries-rotate: 4deg;
+    --industries-y-end: 88%;
+    --industries-duration: 7.4s;
+  }
+
+  @keyframes industries-preview-pan {
+    to {
+      object-position: 50% var(--industries-y-end);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .industries-preview-card,
+    .industries-preview-image {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      transform: none !important;
+    }
+  }
+
   .home-scroll-stack {
     position: relative;
   }

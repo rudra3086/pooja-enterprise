@@ -7,6 +7,12 @@ import { motion } from "framer-motion"
 import { gsap } from "gsap"
 import { ScrollTrigger } from "gsap/ScrollTrigger"
 import { ArrowRight, Award, Clock, Heart, Mail, MapPin, Package, Phone, Send, Shield, Target, Truck, Users } from "lucide-react"
+import hospitalClientImage from "@/media/clients/Hospital.jpg"
+import hotelClientImage from "@/media/clients/Hotel.jpg"
+import restaurantClientImage from "@/media/clients/Restaurent.jpg"
+import corporateClientImage from "@/media/clients/corporate.jpg"
+import retailClientImage from "@/media/clients/retail.jpg"
+import eventClientImage from "@/media/clients/event.jpg"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -123,6 +129,39 @@ const aboutTimeline = [
     year: "2023",
     title: "Sustainability",
     description: "Added eco-conscious product options and improved packaging efficiency standards.",
+  },
+]
+
+const industries = [
+  {
+    image: hospitalClientImage,
+    title: "Hospitals",
+    description: "Hygienic tissue and packaging essentials for patient-care environments.",
+  },
+  {
+    image: hotelClientImage,
+    title: "Hotels",
+    description: "Premium-quality products for guest rooms, dining, and housekeeping use.",
+  },
+  {
+    image: restaurantClientImage,
+    title: "Restaurants",
+    description: "Reliable napkin and food-packaging supplies for daily service operations.",
+  },
+  {
+    image: corporateClientImage,
+    title: "Corporate Offices",
+    description: "Professional tissue and pantry packaging solutions for workplace needs.",
+  },
+  {
+    image: retailClientImage,
+    title: "Retail Stores",
+    description: "Convenient packaging products that support smooth in-store experiences.",
+  },
+  {
+    image: eventClientImage,
+    title: "Event Management",
+    description: "Scalable tissue and packaging support for events and large gatherings.",
   },
 ]
 
@@ -285,6 +324,18 @@ export default function HomePage() {
     const absoluteTop = target.getBoundingClientRect().top + window.scrollY
     const top = Math.max(0, absoluteTop - headerOffset)
     window.scrollTo({ top, behavior: "smooth" })
+  }
+
+  const centerIndustryCardOnHover = (event: React.MouseEvent<HTMLDivElement>) => {
+    if (typeof window !== "undefined" && !window.matchMedia("(hover: hover)").matches) {
+      return
+    }
+
+    event.currentTarget.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+      inline: "nearest",
+    })
   }
 
   const resolveSectionAnchor = (hash: string) => {
@@ -1014,6 +1065,48 @@ export default function HomePage() {
                   </div>
                 </div>
               </motion.div>
+            </div>
+          </motion.section>
+
+          <motion.section
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ margin: "-80px", once: true }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="industries-serve-section home-scroll-slide z-[65] relative py-24 lg:py-32"
+          >
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="text-center">
+                <h2 className="font-display text-3xl font-bold sm:text-4xl tracking-tight">Industries We Serve</h2>
+                <p className="mt-4 text-muted-foreground max-w-3xl mx-auto">
+                  Providing high-quality tissue and packaging solutions across various sectors.
+                </p>
+              </div>
+
+              <div className="industries-preview-grid mt-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {industries.map((industry) => (
+                  <div
+                    key={industry.title}
+                    className="industries-preview-card group rounded-xl bg-white p-3"
+                    tabIndex={0}
+                    data-industry={industry.title}
+                    onMouseEnter={centerIndustryCardOnHover}
+                  >
+                    <div className="industries-preview-media mb-2 overflow-hidden rounded-lg">
+                      <Image
+                        src={industry.image}
+                        alt={industry.title}
+                        className="industries-preview-image h-44 w-full object-cover"
+                        sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
+                      />
+                    </div>
+                    <div className="industries-preview-content mt-auto">
+                      <h3 className="text-lg font-semibold tracking-tight">{industry.title}</h3>
+                      <p className="industries-preview-description mt-2 text-sm text-muted-foreground truncate">{industry.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </motion.section>
 
