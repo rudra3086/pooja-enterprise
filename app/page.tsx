@@ -326,18 +326,6 @@ export default function HomePage() {
     window.scrollTo({ top, behavior: "smooth" })
   }
 
-  const centerIndustryCardOnHover = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (typeof window !== "undefined" && !window.matchMedia("(hover: hover)").matches) {
-      return
-    }
-
-    event.currentTarget.scrollIntoView({
-      behavior: "smooth",
-      block: "center",
-      inline: "nearest",
-    })
-  }
-
   const resolveSectionAnchor = (hash: string) => {
     if (hash === "products") return "products-anchor"
     if (hash === "about") return "about-anchor"
@@ -1090,7 +1078,6 @@ export default function HomePage() {
                     className="industries-preview-card group rounded-xl bg-white p-3"
                     tabIndex={0}
                     data-industry={industry.title}
-                    onMouseEnter={centerIndustryCardOnHover}
                   >
                     <div className="industries-preview-media mb-2 overflow-hidden rounded-lg">
                       <Image

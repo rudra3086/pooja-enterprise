@@ -1053,10 +1053,6 @@ html.dark video {
     --industries-section-bg: color-mix(in oklch, var(--chart-3) 30%, var(--background));
   }
 
-  .industries-preview-grid:has(.industries-preview-card:hover, .industries-preview-card:focus-within) .industries-preview-card:not(:hover, :focus-within) {
-    opacity: 0.44;
-  }
-
   .industries-preview-card {
     --industries-rotate: -3deg;
     --industries-y-end: 86%;
