@@ -316,6 +316,21 @@ export default function HomePage() {
   const addressDetail = contactDetails.find((item) => item.title === "Address")
   const groupedContactDetails = contactDetails.filter((item) => item.title !== "Address")
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      industries.forEach((industry) => {
+        const imageUrl = typeof industry.image === "string" ? industry.image : industry.image.src
+        const preloadedImage = new window.Image()
+        preloadedImage.decoding = "async"
+        preloadedImage.src = imageUrl
+      })
+    }, 0)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [])
+
   const scrollToSection = (sectionId: string) => {
     const target = document.getElementById(sectionId)
     if (!target) return
