@@ -248,6 +248,7 @@ export default function HomePage() {
   const leftLineRef = useRef<SVGLineElement | null>(null)
   const rightLineRef = useRef<SVGLineElement | null>(null)
   const circleRef = useRef<SVGCircleElement | null>(null)
+  const industriesSectionRef = useRef<HTMLElement | null>(null)
   const [introState, setIntroState] = useState<"playing" | "done">("playing")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [flippedProducts, setFlippedProducts] = useState<Record<string, boolean>>({})
@@ -324,6 +325,14 @@ export default function HomePage() {
     const absoluteTop = target.getBoundingClientRect().top + window.scrollY
     const top = Math.max(0, absoluteTop - headerOffset)
     window.scrollTo({ top, behavior: "smooth" })
+  }
+
+  const activateIndustryBackground = (industry: string) => {
+    industriesSectionRef.current?.setAttribute("data-active-industry", industry)
+  }
+
+  const clearIndustryBackground = () => {
+    industriesSectionRef.current?.removeAttribute("data-active-industry")
   }
 
   const resolveSectionAnchor = (hash: string) => {
@@ -1062,6 +1071,7 @@ export default function HomePage() {
             viewport={{ margin: "-80px", once: true }}
             transition={{ duration: 0.6, ease: "easeOut" }}
             className="industries-serve-section home-scroll-slide z-[65] relative py-24 lg:py-32"
+            ref={industriesSectionRef}
           >
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="text-center">
@@ -1078,12 +1088,18 @@ export default function HomePage() {
                     className="industries-preview-card group rounded-xl bg-white p-3"
                     tabIndex={0}
                     data-industry={industry.title}
+                    onMouseEnter={() => activateIndustryBackground(industry.title)}
+                    onFocus={() => activateIndustryBackground(industry.title)}
+                    onMouseLeave={clearIndustryBackground}
+                    onBlur={clearIndustryBackground}
                   >
                     <div className="industries-preview-media mb-2 overflow-hidden rounded-lg">
                       <Image
                         src={industry.image}
                         alt={industry.title}
                         className="industries-preview-image h-44 w-full object-cover"
+                        loading="lazy"
+                        quality={70}
                         sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw"
                       />
                     </div>

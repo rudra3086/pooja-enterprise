@@ -1021,58 +1021,54 @@ html.dark video {
 
   .industries-preview-grid {
     isolation: isolate;
+    overflow: visible;
   }
 
   .industries-serve-section {
     --industries-section-bg: color-mix(in oklch, var(--muted) 65%, var(--background));
     background: var(--industries-section-bg);
-    transition: background-color 0.35s ease, background 0.35s ease;
+    transition: background-color 0.2s ease;
   }
 
-  .industries-serve-section:has(.industries-preview-card[data-industry='Hospitals']:hover, .industries-preview-card[data-industry='Hospitals']:focus-within) {
+  .industries-serve-section[data-active-industry='Hospitals'] {
     --industries-section-bg: color-mix(in oklch, var(--chart-2) 30%, var(--background));
   }
 
-  .industries-serve-section:has(.industries-preview-card[data-industry='Hotels']:hover, .industries-preview-card[data-industry='Hotels']:focus-within) {
+  .industries-serve-section[data-active-industry='Hotels'] {
     --industries-section-bg: color-mix(in oklch, var(--chart-4) 26%, var(--background));
   }
 
-  .industries-serve-section:has(.industries-preview-card[data-industry='Restaurants']:hover, .industries-preview-card[data-industry='Restaurants']:focus-within) {
+  .industries-serve-section[data-active-industry='Restaurants'] {
     --industries-section-bg: color-mix(in oklch, var(--chart-1) 24%, var(--background));
   }
 
-  .industries-serve-section:has(.industries-preview-card[data-industry='Corporate Offices']:hover, .industries-preview-card[data-industry='Corporate Offices']:focus-within) {
+  .industries-serve-section[data-active-industry='Corporate Offices'] {
     --industries-section-bg: color-mix(in oklch, var(--chart-5) 24%, var(--background));
   }
 
-  .industries-serve-section:has(.industries-preview-card[data-industry='Retail Stores']:hover, .industries-preview-card[data-industry='Retail Stores']:focus-within) {
+  .industries-serve-section[data-active-industry='Retail Stores'] {
     --industries-section-bg: color-mix(in oklch, var(--secondary) 72%, var(--background));
   }
 
-  .industries-serve-section:has(.industries-preview-card[data-industry='Event Management']:hover, .industries-preview-card[data-industry='Event Management']:focus-within) {
+  .industries-serve-section[data-active-industry='Event Management'] {
     --industries-section-bg: color-mix(in oklch, var(--chart-3) 30%, var(--background));
   }
 
   .industries-preview-card {
     --industries-rotate: -3deg;
-    --industries-y-end: 86%;
-    --industries-duration: 6.2s;
     border: 1px solid var(--border);
-    box-shadow: 0 8px 24px color-mix(in oklch, var(--foreground) 8%, transparent);
-    filter: grayscale(100%) sepia(6%);
-    mix-blend-mode: multiply;
-    opacity: 0.72;
-    transform: translateY(0) scale(0.92) rotate(var(--industries-rotate));
-    outline: 6px solid var(--background);
+    box-shadow: 0 8px 20px color-mix(in oklch, var(--foreground) 7%, transparent);
+    opacity: 0.9;
+    transform: translateY(0) scale(0.94) rotate(var(--industries-rotate));
+    outline: 6px solid #fff;
     outline-offset: 6px;
+    backface-visibility: hidden;
     transition:
       border-color 0.2s ease,
-      box-shadow 0.3s ease,
-      filter 0.3s ease,
-      outline-offset 0.3s ease,
-      opacity 0.3s ease,
-      transform 0.3s ease,
-      z-index 0.15s ease;
+      box-shadow 0.2s ease,
+      outline-color 0.2s ease,
+      opacity 0.2s ease,
+      transform 0.18s ease;
     position: relative;
     height: 19rem;
     display: flex;
@@ -1083,22 +1079,14 @@ html.dark video {
   .industries-preview-card:hover,
   .industries-preview-card:focus-within {
     border-color: color-mix(in oklch, var(--accent) 40%, var(--border));
-    box-shadow: 0 24px 56px color-mix(in oklch, var(--foreground) 20%, transparent);
-    filter: none;
-    mix-blend-mode: normal;
+    box-shadow: 0 14px 30px color-mix(in oklch, var(--foreground) 12%, transparent);
     opacity: 1;
-    outline-offset: 3px;
-    transform: translateY(-5px) scale(1) rotate(0deg);
+    transform: translateY(-4px) scale(1.05) rotate(0deg);
     z-index: 7;
   }
 
-  .industries-preview-card:hover {
-    transform: translateY(-8px) scale(1.07) rotate(0deg);
-    z-index: 8;
-  }
-
   .industries-preview-card:focus-visible {
-    outline-color: color-mix(in oklch, var(--accent) 28%, var(--background));
+    outline-color: #fff;
   }
 
   .industries-preview-media {
@@ -1116,14 +1104,24 @@ html.dark video {
   }
 
   .industries-preview-image {
-    object-position: 50% 0%;
-    animation: industries-preview-pan var(--industries-duration) ease-out forwards;
-    transition: transform 0.3s ease;
+    object-position: 50% 18%;
+    filter: grayscale(100%) saturate(85%);
+    transition: transform 0.22s ease;
   }
 
   .industries-preview-card:hover .industries-preview-image,
   .industries-preview-card:focus-within .industries-preview-image {
-    transform: scale(1.05);
+    filter: none;
+    transform: scale(1.02);
+  }
+
+  html.dark .industries-preview-image {
+    filter: invert(1) hue-rotate(180deg) grayscale(100%) saturate(85%) !important;
+  }
+
+  html.dark .industries-preview-card:hover .industries-preview-image,
+  html.dark .industries-preview-card:focus-within .industries-preview-image {
+    filter: invert(1) hue-rotate(180deg) !important;
   }
 
   .industries-preview-card:hover .industries-preview-description {
@@ -1134,44 +1132,36 @@ html.dark video {
 
   .industries-preview-card:nth-child(1) {
     --industries-rotate: -4deg;
-    --industries-y-end: 64%;
-    --industries-duration: 6s;
   }
 
   .industries-preview-card:nth-child(2) {
     --industries-rotate: 3deg;
-    --industries-y-end: 72%;
-    --industries-duration: 6.3s;
   }
 
   .industries-preview-card:nth-child(3) {
     --industries-rotate: -1deg;
-    --industries-y-end: 82%;
-    --industries-duration: 6.6s;
   }
 
   .industries-preview-card:nth-child(4) {
     --industries-rotate: -5deg;
-    --industries-y-end: 86%;
-    --industries-duration: 6.9s;
   }
 
   .industries-preview-card:nth-child(5) {
     --industries-rotate: -2deg;
-    --industries-y-end: 74%;
-    --industries-duration: 7.1s;
   }
 
   .industries-preview-card:nth-child(6) {
     --industries-rotate: 4deg;
-    --industries-y-end: 88%;
-    --industries-duration: 7.4s;
   }
 
-  @keyframes industries-preview-pan {
-    to {
-      object-position: 50% var(--industries-y-end);
-    }
+  /* Dark mode uses page inversion: white renders dark, black renders white. */
+  html.dark .industries-preview-card {
+    outline-color: #fff;
+  }
+
+  html.dark .industries-preview-card:hover,
+  html.dark .industries-preview-card:focus-within {
+    outline-color: #000;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -1194,6 +1184,27 @@ html.dark video {
     will-change: transform;
     backface-visibility: hidden;
     transform: translateZ(0);
+  }
+
+  @media (max-width: 768px) {
+    .home-scroll-slide {
+      min-height: auto;
+      will-change: auto;
+      backface-visibility: visible;
+      transform: none;
+    }
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    .industries-preview-card {
+      transform: none;
+      opacity: 1;
+      outline-offset: 0;
+    }
+
+    .industries-preview-image {
+      transform: none;
+    }
   }
 
 }

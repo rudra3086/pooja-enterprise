@@ -6,7 +6,8 @@
     "build": "next build",
     "dev": "next dev",
     "lint": "eslint .",
-    "start": "next start"
+    "start": "next start",
+    "postinstall": "node scripts/fix-framer-motion-sourcemaps.js"
   },
   "dependencies": {
     "@emotion/is-prop-valid": "latest",
