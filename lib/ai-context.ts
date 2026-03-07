@@ -9,6 +9,11 @@ type ProductContextRow = RowDataPacket & {
   isCustomizable: number | boolean
 }
 
+type CatalogStatsRow = RowDataPacket & {
+  activeProductCount: number | string
+  customizableProductCount: number | string
+}
+
 type DeliveryContextRow = RowDataPacket & {
   costPerKm: number | string
   productionLatitude: number | string | null
@@ -32,6 +37,14 @@ function asBool(value: number | boolean): boolean {
 
 async function getCatalogContext(): Promise<string> {
   try {
+    const statsRows = await query<CatalogStatsRow[]>(
+      `SELECT
+        COUNT(*) as activeProductCount,
+        SUM(CASE WHEN is_customizable = TRUE THEN 1 ELSE 0 END) as customizableProductCount
+       FROM products
+       WHERE is_active = TRUE`
+    )
+
     const rows = await query<ProductContextRow[]>(
       `SELECT
         p.name as productName,
@@ -50,12 +63,22 @@ async function getCatalogContext(): Promise<string> {
       return "Active catalog snapshot: No active products were found in the database."
     }
 
+    const activeProductCount = Number(statsRows[0]?.activeProductCount ?? rows.length)
+    const customizableProductCount = Number(statsRows[0]?.customizableProductCount ?? 0)
+
     const productLines = rows.map((row) => {
       const customizable = asBool(row.isCustomizable) ? "Yes" : "No"
       return `- ${row.productName} | Category: ${row.categoryName || "General"} | Base Price: INR ${formatInr(row.basePrice)} | MOQ: ${row.minOrderQuantity} | Customizable: ${customizable}`
     })
 
-    return ["Active catalog snapshot (latest 20 products):", ...productLines].join("\n")
+    return [
+      "Active catalog summary:",
+      `- Total active products: ${Number.isFinite(activeProductCount) ? activeProductCount : rows.length}`,
+      `- Products with customization enabled: ${Number.isFinite(customizableProductCount) ? customizableProductCount : 0}`,
+      "",
+      "Active catalog snapshot (latest 20 products):",
+      ...productLines,
+    ].join("\n")
   } catch {
     return "Active catalog snapshot: Currently unavailable due to a database read issue."
   }
@@ -117,6 +140,9 @@ export async function getWebsiteAiContext(): Promise<string> {
     "Assistant behavior rules:",
     "- Prefer website-supported actions when giving guidance",
     "- If user asks for location, always provide the exact address and maps link above",
+    "- Use the catalog summary and product list as source of truth for product breadth claims",
+    "- Do not say 'wide range', 'extensive catalog', or similar unless at least 10 active products are listed",
+    "- Mention customization only for products explicitly marked as Customizable: Yes",
     "- Never invent exact prices, delivery timelines, stock guarantees, or policy commitments",
     "- If data is missing, ask concise clarifying questions or direct user to contact sales",
     "- Keep responses short, professional, and action-oriented",

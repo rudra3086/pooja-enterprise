@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getContactMessageById, getSessionByToken } from "@/lib/db"
+import { getWebsiteAiContext } from "@/lib/ai-context"
 import type { ApiResponse } from "@/lib/types"
 
 async function getAdminSession(request: NextRequest): Promise<{ userId: string } | null> {
@@ -112,6 +113,9 @@ export async function POST(
     const prompt = [
       "Write a professional, concise customer support email reply for a B2B packaging supplier.",
       "Keep it polite, clear, and actionable.",
+      "Base product/customization claims only on the provided website knowledge.",
+      "Do not use generic marketing phrases like 'wide range of products' unless explicitly supported by the context.",
+      "Do not claim box customization unless the context explicitly confirms customization availability.",
       "Do not invent prices, delivery dates, or commitments.",
       "If details are missing, ask 1-2 short clarifying questions.",
       "Return plain text only (no markdown, no subject line).",
@@ -123,11 +127,15 @@ export async function POST(
       `Inquiry: ${message.message}`,
     ].join("\n")
 
+    const websiteContext = await getWebsiteAiContext()
+
     const messages: ChatMessage[] = [
       {
         role: "system",
-        content: "You are a customer support assistant for Pooja Enterprise. Keep responses professional, brief, and business-friendly.",
+        content:
+          "You are a customer support assistant for Pooja Enterprise. Keep responses professional, brief, and business-friendly. Use only facts present in the provided website knowledge. If uncertain, state that sales will confirm details.",
       },
+      { role: "system", content: `Website knowledge:\n${websiteContext.slice(0, 6000)}` },
       { role: "user", content: prompt },
     ]
 
