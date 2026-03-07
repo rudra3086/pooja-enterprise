@@ -1,0 +1,11 @@
+﻿Factors,WATERFALL MODEL,ITERATIVE MODEL,PROTOTYPE MODEL,EVOLUTION MODEL,RAD MODEL,AGILE MODEL,Spiral MODEL
+Cost,Low,Low,Fair,Fair,High,Highest,Very High
+Simplicity,Very Simple,Very Simple,Simple,Simple,Simple,Complex,Intermediate
+Risk,Very low,Very low,No risk analysis,Very low to medium,Low,High,High
+Involvement of user,Only at the beginning,Only at the beginning,Very High,Fair,Only at the beginning,High,High
+Flexibility,Rigid,Flexible,Higly Flexible,Less Flexible,High,Higly Flexible,Flexible
+Maintenance,Least,Promotes Maintenance,Routine,Promotes Maintenance,Easily Maintained,Promotes Maintenance,Typical
+Integrity,Vital,Vital,Weak,Robust,Simple,Demonstrable,High
+Security,Strong,Strong,Weak,Robust,Strong,Fair,Strong
+Reusability,Limited,Limited,Limited,Fair,Fair,Use case reusable,Good
+Requirement,Well understood,Beginning,Frequently Changed,Beginning,Time-box released,Frequently Changed,Beginning

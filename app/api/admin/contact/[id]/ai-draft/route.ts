@@ -17,29 +17,34 @@ type ChatMessage = {
   content: string
 }
 
-async function generateWithOllama(messages: ChatMessage[]) {
-  const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || "http://127.0.0.1:11434"
-  const ollamaModel = process.env.OLLAMA_MODEL || "llama3.2:3b"
+async function generateWithGroq(messages: ChatMessage[]) {
+  const apiKey = process.env.GROQ_API_KEY
+  const model = process.env.GROQ_MODEL || "llama-3.1-8b-instant"
+  const baseUrl = process.env.GROQ_BASE_URL || "https://api.groq.com/openai/v1"
 
-  const response = await fetch(`${ollamaBaseUrl}/api/chat`, {
+  if (!apiKey) {
+    throw new Error("GROQ_API_KEY is missing")
+  }
+
+  const response = await fetch(`${baseUrl}/chat/completions`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
     body: JSON.stringify({
-      model: ollamaModel,
+      model,
+      temperature: 0.5,
       messages,
-      stream: false,
-      options: {
-        temperature: 0.5,
-      },
     }),
   })
 
   const data = await response.json()
   if (!response.ok) {
-    throw new Error(data?.error || "Failed to generate AI draft with Ollama")
+    throw new Error(data?.error?.message || "Failed to generate AI draft with Groq")
   }
 
-  const draft = data?.message?.content?.trim()
+  const draft = data?.choices?.[0]?.message?.content?.trim()
   if (!draft) {
     throw new Error("AI draft was empty")
   }
@@ -127,10 +132,10 @@ export async function POST(
     ]
 
     const provider = (process.env.AI_PROVIDER || "").toLowerCase()
-    const useOllama = provider === "ollama" || (!!process.env.OLLAMA_BASE_URL && !process.env.OPENAI_API_KEY)
+    const useGroq = provider === "groq" || (!!process.env.GROQ_API_KEY && !process.env.OPENAI_API_KEY)
 
-    const draft = useOllama
-      ? await generateWithOllama(messages)
+    const draft = useGroq
+      ? await generateWithGroq(messages)
       : await generateWithOpenAI(messages)
 
     return NextResponse.json<ApiResponse<{ draft: string }>>({
