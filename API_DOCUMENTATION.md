@@ -511,6 +511,8 @@ Response:
 
 Uploads image to `public/uploads/payment-proofs/`
 
+The payment page also generates a browser-based HTML receipt that the user can download manually or automatically after successful proof submission.
+
 Status: `201 Created`, `400 Bad Request`, `404 Not Found`
 
 ---

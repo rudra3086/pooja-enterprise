@@ -375,6 +375,7 @@ Step 3: User Submits Proof
    │   ├─ utr = user-provided UTR
    │   ├─ screenshot_url = /uploads/payment-proofs/...
    │   └─ status = verification_pending
+   ├─ Generate a downloadable HTML receipt in the browser
    └─ Redirect to /dashboard/orders
 
 Step 4: Admin Verification
@@ -398,6 +399,11 @@ payment_orders table:
 ├─ client_id: Associated client (optional)
 └─ timestamps: created_at, updated_at (auto)
 ```
+
+**Receipt Download**:
+- The receipt is generated on the client side from the payment order details already shown on the payment page.
+- Users can download it manually before submitting proof, and it is downloaded automatically after successful proof submission.
+- No extra database table or API route is required for receipt generation.
 
 ---
 

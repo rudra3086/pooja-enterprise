@@ -73,6 +73,7 @@ And allows admins to:
 - Status tracking and detailed order modal.
 - Delivered date visible for delivered orders.
 - Product images shown in order details.
+- Download a payment receipt from the payment page and auto-save it after UPI proof submission.
 - Dashboard “Recent Orders → View Details” deep-links directly to that order details modal.
 
 ## 3.7 Delivery pricing and map logic

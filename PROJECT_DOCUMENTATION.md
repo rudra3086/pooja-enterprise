@@ -96,6 +96,7 @@ Customer Journey:
 #### 6. **Payment (UPI Flow)**
 - View static QR code (Rudra Patel's UPI ID)
 - User manually scans & pays via UPI app
+- Download a payment receipt from the payment page before or after proof submission
 - Submit payment screenshot
 - Enter UTR (transaction ID)
 - System stores proof for admin verification
@@ -499,6 +500,7 @@ Step 3: Submit Proof
 │  │  ├─ screenshot_url field
 │  │  └─ status → verification_pending
 │  └─ return success
+├─ generate a downloadable HTML receipt in the browser
 └─ redirect to /dashboard/orders
 
 Step 4: Admin Verification (/admin/payments)
@@ -557,6 +559,11 @@ Admin Payment Panel (/admin/payments)
       └─ status → rejected
          └─ customer resubmits
 ```
+
+### Payment Receipt Download
+- The payment page now includes a **Download Receipt** button.
+- After proof submission, the app automatically downloads a browser-generated HTML receipt.
+- The receipt includes merchant name, UPI ID, order ID, amount, payment status, UTR, and timestamp.
 
 ---
 

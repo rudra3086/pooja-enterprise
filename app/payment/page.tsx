@@ -84,6 +84,133 @@ export default function PaymentPage() {
     return `upi://pay?pa=${encodeURIComponent(UPI_ID)}&pn=${encodeURIComponent(MERCHANT_NAME)}&am=${amount.toFixed(2)}&cu=INR&tn=${encodeURIComponent(`Order_${orderId}`)}`
   }, [amount, orderId])
 
+  const downloadReceipt = (receiptStatus: PaymentOrderResponse["status"], transactionId?: string) => {
+    if (!orderId || amount <= 0) return
+
+    const generatedAt = new Date()
+    const receiptHtml = `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Receipt ${orderId}</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f6f7fb;
+        color: #111827;
+        margin: 0;
+        padding: 24px;
+      }
+      .receipt {
+        max-width: 720px;
+        margin: 0 auto;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        padding: 28px;
+      }
+      .header {
+        border-bottom: 1px solid #e5e7eb;
+        padding-bottom: 16px;
+        margin-bottom: 20px;
+      }
+      .title {
+        margin: 0;
+        font-size: 24px;
+      }
+      .subtitle {
+        margin: 6px 0 0;
+        color: #6b7280;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+      .item {
+        background: #f9fafb;
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+      .label {
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #6b7280;
+        margin-bottom: 6px;
+      }
+      .value {
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .footer {
+        margin-top: 24px;
+        padding-top: 16px;
+        border-top: 1px solid #e5e7eb;
+        color: #6b7280;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="receipt">
+      <div class="header">
+        <h1 class="title">Payment Receipt</h1>
+        <p class="subtitle">Pooja Enterprise UPI payment record</p>
+      </div>
+
+      <div class="grid">
+        <div class="item">
+          <div class="label">Merchant Name</div>
+          <div class="value">${MERCHANT_NAME}</div>
+        </div>
+        <div class="item">
+          <div class="label">UPI ID</div>
+          <div class="value">${UPI_ID}</div>
+        </div>
+        <div class="item">
+          <div class="label">Order ID</div>
+          <div class="value">${orderId}</div>
+        </div>
+        <div class="item">
+          <div class="label">Amount</div>
+          <div class="value">INR ${amount.toFixed(2)}</div>
+        </div>
+        <div class="item">
+          <div class="label">Status</div>
+          <div class="value">${receiptStatus.replace(/_/g, " ")}</div>
+        </div>
+        <div class="item">
+          <div class="label">UTR / Transaction ID</div>
+          <div class="value">${transactionId || utr.trim() || "Not submitted yet"}</div>
+        </div>
+        <div class="item">
+          <div class="label">Generated At</div>
+          <div class="value">${generatedAt.toLocaleString()}</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        This receipt is generated from the payment details submitted on the Pooja Enterprise payment page.
+        Keep this file for your records until the payment is verified by the admin team.
+      </div>
+    </div>
+  </body>
+</html>`
+
+    const blob = new Blob([receiptHtml], { type: "text/html" })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement("a")
+    link.href = url
+    link.download = `payment-receipt-${orderId}.html`
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
+
   const handleSubmitProof = async () => {
     if (!orderId) return
 
@@ -126,6 +253,7 @@ export default function PaymentPage() {
         title: "Submitted",
         description: "Payment proof submitted for verification.",
       })
+      downloadReceipt("verification_pending", utr.trim())
       setUtr("")
       router.push("/dashboard/orders")
       setScreenshot(null)
@@ -178,6 +306,16 @@ export default function PaymentPage() {
                     Pay Now
                   </Button>
                 </div>
+                <div className="flex items-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => downloadReceipt("pending")}
+                    className="w-full"
+                    disabled={!orderId || amount <= 0}
+                  >
+                    Download Receipt
+                  </Button>
+                </div>
               </div>
 
               <div className="flex justify-center">
@@ -197,6 +335,10 @@ export default function PaymentPage() {
           <CardTitle>Submit Payment Proof</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            After you submit the proof, the receipt will be downloaded automatically.
+          </p>
+
           <div className="space-y-2">
             <Label htmlFor="utr">UTR / Transaction ID</Label>
             <Input
