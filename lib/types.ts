@@ -269,6 +269,18 @@ export interface UpdateOrderStatusRequest {
   adminNotes?: string
 }
 
+export interface PaymentOrder {
+  id: string
+  orderId: string
+  clientId?: string
+  amount: number
+  status: "pending" | "verification_pending" | "paid" | "rejected"
+  utr?: string
+  screenshotUrl?: string
+  createdAt?: Date
+  updatedAt?: Date
+}
+
 export interface UpdateStockRequest {
   variantId: string
   quantity: number

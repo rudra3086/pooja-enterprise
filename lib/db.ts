@@ -12,7 +12,8 @@ import {
   Cart,
   Session,
   DeliverySettings,
-  ContactMessage
+  ContactMessage,
+  PaymentOrder
 } from "@/lib/types"
 
 declare global {
@@ -1240,6 +1241,7 @@ export async function clearCart(cartId: string): Promise<boolean> {
 
 let deliverySchemaReadyPromise: Promise<void> | null = null
 let contactSchemaReadyPromise: Promise<void> | null = null
+let paymentSchemaReadyPromise: Promise<void> | null = null
 
 async function ensureDeliverySchema(): Promise<void> {
   if (!deliverySchemaReadyPromise) {
@@ -2233,6 +2235,142 @@ export async function restoreOrderForClient(orderId: string, clientId: string): 
      SET client_hidden_at = NULL, updated_at = NOW()
      WHERE id = ? AND client_id = ? AND client_hidden_at IS NOT NULL`,
     [orderId, clientId]
+  )
+
+  return result.affectedRows > 0
+}
+
+async function ensurePaymentSchema(): Promise<void> {
+  if (!paymentSchemaReadyPromise) {
+    paymentSchemaReadyPromise = (async () => {
+      await execute(
+        `CREATE TABLE IF NOT EXISTS payment_orders (
+          id VARCHAR(36) PRIMARY KEY,
+          order_id VARCHAR(64) NOT NULL UNIQUE,
+          client_id VARCHAR(36) NULL,
+          amount DECIMAL(10, 2) NOT NULL,
+          status ENUM('pending', 'verification_pending', 'paid', 'rejected') NOT NULL DEFAULT 'pending',
+          utr VARCHAR(128) NULL,
+          screenshot_url TEXT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_payment_orders_status (status),
+          INDEX idx_payment_orders_client (client_id)
+        )`
+      )
+    })()
+  }
+
+  await paymentSchemaReadyPromise
+}
+
+function generatePaymentOrderId(): string {
+  return `PO${Date.now()}${Math.random().toString(36).slice(2, 6).toUpperCase()}`
+}
+
+export async function createPaymentOrder(data: {
+  amount: number
+  clientId?: string
+}): Promise<PaymentOrder> {
+  await ensurePaymentSchema()
+
+  const id = `pay-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  const orderId = generatePaymentOrderId()
+
+  await execute(
+    `INSERT INTO payment_orders (id, order_id, client_id, amount, status)
+     VALUES (?, ?, ?, ?, 'pending')`,
+    [id, orderId, data.clientId || null, data.amount]
+  )
+
+  return {
+    id,
+    orderId,
+    clientId: data.clientId,
+    amount: data.amount,
+    status: "pending",
+  }
+}
+
+export async function submitPaymentProof(data: {
+  orderId: string
+  utr: string
+  screenshotUrl: string
+  clientId?: string
+}): Promise<boolean> {
+  await ensurePaymentSchema()
+
+  const params: (string | null)[] = [data.utr, data.screenshotUrl, data.orderId]
+  let whereClause = "order_id = ?"
+
+  if (data.clientId) {
+    whereClause += " AND client_id = ?"
+    params.push(data.clientId)
+  }
+
+  const result = await execute(
+    `UPDATE payment_orders
+     SET utr = ?, screenshot_url = ?, status = 'verification_pending', updated_at = NOW()
+     WHERE ${whereClause}`,
+    params
+  )
+
+  return result.affectedRows > 0
+}
+
+export async function getPaymentOrders(options?: {
+  status?: PaymentOrder["status"]
+}): Promise<PaymentOrder[]> {
+  await ensurePaymentSchema()
+
+  const params: string[] = []
+  let whereClause = ""
+  if (options?.status) {
+    whereClause = "WHERE p.status = ?"
+    params.push(options.status)
+  }
+
+  const rows = await query<RowDataPacket[]>(
+    `SELECT
+      p.id,
+      p.order_id as orderId,
+      p.client_id as clientId,
+      p.amount,
+      p.status,
+      p.utr,
+      p.screenshot_url as screenshotUrl,
+      p.created_at as createdAt,
+      p.updated_at as updatedAt
+    FROM payment_orders p
+    ${whereClause}
+    ORDER BY p.created_at DESC`,
+    params
+  )
+
+  return rows.map(row => ({
+    id: row.id,
+    orderId: row.orderId,
+    clientId: row.clientId || undefined,
+    amount: parseFloat(row.amount),
+    status: row.status,
+    utr: row.utr || undefined,
+    screenshotUrl: row.screenshotUrl || undefined,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  }))
+}
+
+export async function updatePaymentOrderStatus(
+  orderId: string,
+  status: Extract<PaymentOrder["status"], "paid" | "rejected">
+): Promise<boolean> {
+  await ensurePaymentSchema()
+
+  const result = await execute(
+    `UPDATE payment_orders
+     SET status = ?, updated_at = NOW()
+     WHERE order_id = ?`,
+    [status, orderId]
   )
 
   return result.affectedRows > 0

@@ -176,6 +176,11 @@ export default function CheckoutPage() {
     setIsProcessing(true)
 
     try {
+      if (paymentMethod === "upi") {
+        router.push(`/payment?amount=${encodeURIComponent(grandTotal.toFixed(2))}`)
+        return
+      }
+
       const orderData = {
         requiresShipping,
         shippingName: shippingInfo.name,
