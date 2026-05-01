@@ -15,6 +15,16 @@ async function getClientIdFromRequest(request: NextRequest): Promise<string | un
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log('📨 POST /api/create-order received:', {
+      hasAmount: !!body?.amount,
+      hasCartItems: !!body?.cartItems,
+      hasShippingInfo: !!body?.shippingInfo,
+      cartItemsType: typeof body?.cartItems,
+      shippingInfoType: typeof body?.shippingInfo,
+      cartItemsValue: body?.cartItems,
+      shippingInfoValue: body?.shippingInfo
+    })
+    
     const amountRaw = Number(body?.amount)
 
     if (!Number.isFinite(amountRaw) || amountRaw <= 0) {
@@ -24,9 +34,30 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const clientId = await getClientIdFromRequest(request)
+    
+    // Extract cart items and shipping info from request
+    const cartItems = body?.cartItems || []
+    const shippingInfo = body?.shippingInfo || {}
+    
+    console.log('📝 Extracted data for payment order:', {
+      amount: amountRaw,
+      clientId,
+      cartItemsLength: Array.isArray(cartItems) ? cartItems.length : 'NOT_ARRAY',
+      shippingInfoKeys: typeof shippingInfo === 'object' ? Object.keys(shippingInfo) : 'NOT_OBJECT'
+    })
+
     const paymentOrder = await createPaymentOrder({
       amount: Number(amountRaw.toFixed(2)),
-      clientId: await getClientIdFromRequest(request),
+      clientId,
+      cartItems,
+      shippingInfo
+    })
+
+    console.log('✅ Payment order created:', {
+      id: paymentOrder.id,
+      orderId: paymentOrder.orderId,
+      status: paymentOrder.status
     })
 
     return NextResponse.json<ApiResponse<PaymentOrder>>({

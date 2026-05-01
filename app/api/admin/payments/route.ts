@@ -21,9 +21,13 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status") as PaymentOrder["status"] | null
+    const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 500) // Cap at 500
+    const offset = parseInt(searchParams.get("offset") || "0")
 
     const orders = await getPaymentOrders({
       status: status || undefined,
+      limit,
+      offset,
     })
 
     return NextResponse.json<ApiResponse<PaymentOrder[]>>({

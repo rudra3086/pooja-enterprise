@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -19,10 +19,16 @@ interface PaymentOrderResponse {
   status: "pending" | "verification_pending" | "paid" | "rejected"
 }
 
+interface CheckoutSession {
+  cartItems: any[]
+  shippingInfo: any
+}
+
 export default function PaymentPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
+  const initializationRef = useRef(false)
 
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
@@ -30,6 +36,7 @@ export default function PaymentPage() {
   const [amount, setAmount] = useState(0)
   const [utr, setUtr] = useState("")
   const [screenshot, setScreenshot] = useState<File | null>(null)
+  const [checkoutSession, setCheckoutSession] = useState<CheckoutSession | null>(null)
 
   const queryAmount = useMemo(() => {
     const value = Number(searchParams.get("amount") || "0")
@@ -38,22 +45,37 @@ export default function PaymentPage() {
   }, [searchParams])
 
   useEffect(() => {
-    const initPaymentOrder = async () => {
-      if (queryAmount <= 0) {
-        toast({
-          title: "Invalid amount",
-          description: "Please start payment from checkout.",
-          variant: "destructive",
-        })
-        setLoading(false)
-        return
-      }
+    // Prevent multiple initializations using ref
+    if (initializationRef.current || queryAmount <= 0) return
+    initializationRef.current = true
 
+    const initPaymentOrder = async () => {
       try {
+        // Retrieve checkout session from sessionStorage
+        const sessionData = sessionStorage.getItem('checkoutSession')
+        let session: CheckoutSession | null = null
+        
+        if (sessionData) {
+          try {
+            session = JSON.parse(sessionData)
+            setCheckoutSession(session)
+          } catch (e) {
+            console.error('Failed to parse checkout session:', e)
+          }
+        }
+
+        // Prepare payment order data with cart items and shipping info
+        const paymentOrderData: any = { amount: queryAmount }
+        
+        if (session) {
+          paymentOrderData.cartItems = session.cartItems
+          paymentOrderData.shippingInfo = session.shippingInfo
+        }
+
         const response = await fetch("/api/create-order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ amount: queryAmount }),
+          body: JSON.stringify(paymentOrderData),
         })
         const result = await response.json()
 
@@ -214,19 +236,19 @@ export default function PaymentPage() {
   const handleSubmitProof = async () => {
     if (!orderId) return
 
-    if (!utr.trim()) {
+    if (!screenshot) {
       toast({
-        title: "UTR required",
-        description: "Please enter transaction ID/UTR.",
+        title: "Payment screenshot required",
+        description: "Please upload your UPI payment screenshot.",
         variant: "destructive",
       })
       return
     }
 
-    if (!screenshot) {
+    if (!utr.trim()) {
       toast({
-        title: "Screenshot required",
-        description: "Please upload payment screenshot.",
+        title: "UPI Transaction ID required",
+        description: "Please enter your UPI Transaction ID / UTR.",
         variant: "destructive",
       })
       return
@@ -250,12 +272,17 @@ export default function PaymentPage() {
       }
 
       toast({
-        title: "Submitted",
-        description: "Payment proof submitted for verification.",
+        title: "Order Placed Successfully!",
+        description: "Your payment has been submitted for verification. You will be redirected to your orders.",
       })
       downloadReceipt("verification_pending", utr.trim())
+      
+      // Small delay to show the success message
+      setTimeout(() => {
+        router.push("/dashboard/orders")
+      }, 2000)
+      
       setUtr("")
-      router.push("/dashboard/orders")
       setScreenshot(null)
     } catch (error) {
       console.error(error)
@@ -293,29 +320,6 @@ export default function PaymentPage() {
                   <p className="text-sm text-muted-foreground">Order ID</p>
                   <p className="font-medium">{orderId}</p>
                 </div>
-                <div className="flex items-end">
-                  <Button
-                    onClick={() => {
-                      if (upiLink) {
-                        window.location.href = upiLink
-                      }
-                    }}
-                    className="w-full"
-                    disabled={!upiLink}
-                  >
-                    Pay Now
-                  </Button>
-                </div>
-                <div className="flex items-end">
-                  <Button
-                    variant="outline"
-                    onClick={() => downloadReceipt("pending")}
-                    className="w-full"
-                    disabled={!orderId || amount <= 0}
-                  >
-                    Download Receipt
-                  </Button>
-                </div>
               </div>
 
               <div className="flex justify-center">
@@ -336,21 +340,22 @@ export default function PaymentPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            After you submit the proof, the receipt will be downloaded automatically.
+            Please upload your UPI payment screenshot and enter your transaction ID to complete your order.
           </p>
 
           <div className="space-y-2">
-            <Label htmlFor="utr">UTR / Transaction ID</Label>
+            <Label htmlFor="utr">UPI Transaction ID / UTR *</Label>
             <Input
               id="utr"
-              placeholder="Enter UTR"
+              placeholder="Enter your UPI Transaction ID"
               value={utr}
               onChange={(event) => setUtr(event.target.value)}
+              disabled={loading || submitting}
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="screenshot">Payment Screenshot</Label>
+            <Label htmlFor="screenshot">Payment Screenshot *</Label>
             <Input
               id="screenshot"
               type="file"
@@ -359,11 +364,20 @@ export default function PaymentPage() {
                 const file = event.target.files?.[0] || null
                 setScreenshot(file)
               }}
+              disabled={loading || submitting}
             />
+            {screenshot && (
+              <p className="text-sm text-green-600">✓ {screenshot.name}</p>
+            )}
           </div>
 
-          <Button onClick={handleSubmitProof} disabled={loading || submitting || !orderId} className="w-full">
-            {submitting ? "Submitting..." : "Submit Proof"}
+          <Button 
+            onClick={handleSubmitProof} 
+            disabled={loading || submitting || !orderId || !utr.trim() || !screenshot}
+            className="w-full mt-6"
+            size="lg"
+          >
+            {submitting ? "Processing..." : "Place Order"}
           </Button>
         </CardContent>
       </Card>

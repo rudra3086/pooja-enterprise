@@ -1670,7 +1670,8 @@ export async function createOrder(data: {
     totalPrice: number
     customization?: object
   }[]
-}): Promise<Order> {
+}, options?: { skipStockUpdate?: boolean }): Promise<Order> {
+  // options.skipStockUpdate: when true do not decrement variant stock
   await ensureDeliverySchema()
   const connection = await getConnection()
   
@@ -1763,8 +1764,8 @@ export async function createOrder(data: {
       
       console.log('Order item created successfully:', itemId)
 
-      // Update stock if variant
-      if (item.variantId) {
+      // Update stock if variant (skip when option set)
+      if (item.variantId && !(options && options.skipStockUpdate)) {
         await connection.execute(
           "UPDATE product_variants SET stock_quantity = GREATEST(0, stock_quantity - ?) WHERE id = ?",
           [item.quantity, item.variantId]
@@ -2252,12 +2253,26 @@ async function ensurePaymentSchema(): Promise<void> {
           status ENUM('pending', 'verification_pending', 'paid', 'rejected') NOT NULL DEFAULT 'pending',
           utr VARCHAR(128) NULL,
           screenshot_url TEXT NULL,
+          created_order_id VARCHAR(36) NULL,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           INDEX idx_payment_orders_status (status),
           INDEX idx_payment_orders_client (client_id)
         )`
       )
+      // Ensure compatibility with existing databases: add column if missing
+      try {
+        const colCheck = await query<RowDataPacket[]>(
+          `SELECT COUNT(*) as cnt FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'payment_orders' AND column_name = 'created_order_id'`
+        )
+        const exists = colCheck && colCheck[0] && colCheck[0].cnt > 0
+        if (!exists) {
+          await execute(`ALTER TABLE payment_orders ADD COLUMN created_order_id VARCHAR(36) NULL`)
+        }
+      } catch (e) {
+        // Non-fatal: log and continue
+        console.warn('Could not add created_order_id column (may already exist or permission issue):', e)
+      }
     })()
   }
 
@@ -2271,24 +2286,135 @@ function generatePaymentOrderId(): string {
 export async function createPaymentOrder(data: {
   amount: number
   clientId?: string
+  cartItems?: any[]
+  shippingInfo?: any
 }): Promise<PaymentOrder> {
   await ensurePaymentSchema()
 
   const id = `pay-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
   const orderId = generatePaymentOrderId()
 
-  await execute(
-    `INSERT INTO payment_orders (id, order_id, client_id, amount, status)
-     VALUES (?, ?, ?, ?, 'pending')`,
-    [id, orderId, data.clientId || null, data.amount]
-  )
+  // Ensure data is properly formatted before stringifying
+  let cartItemsJson: string | null = null
+  if (data.cartItems) {
+    if (Array.isArray(data.cartItems)) {
+      cartItemsJson = JSON.stringify(data.cartItems)
+    } else if (typeof data.cartItems === 'string') {
+      // If it's already a string, verify it's valid JSON
+      try {
+        JSON.parse(data.cartItems)
+        cartItemsJson = data.cartItems
+      } catch (e) {
+        console.warn('Invalid cart items JSON, resetting to empty array')
+        cartItemsJson = JSON.stringify([])
+      }
+    } else {
+      console.warn('Unexpected cartItems type:', typeof data.cartItems, data.cartItems)
+      cartItemsJson = JSON.stringify([])
+    }
+  }
 
-  return {
+  let shippingInfoJson: string | null = null
+  if (data.shippingInfo) {
+    if (typeof data.shippingInfo === 'object' && !Array.isArray(data.shippingInfo)) {
+      shippingInfoJson = JSON.stringify(data.shippingInfo)
+    } else if (typeof data.shippingInfo === 'string') {
+      // If it's already a string, verify it's valid JSON
+      try {
+        JSON.parse(data.shippingInfo)
+        shippingInfoJson = data.shippingInfo
+      } catch (e) {
+        console.warn('Invalid shipping info JSON, resetting to empty object')
+        shippingInfoJson = JSON.stringify({})
+      }
+    } else {
+      console.warn('Unexpected shippingInfo type:', typeof data.shippingInfo, data.shippingInfo)
+      shippingInfoJson = JSON.stringify({})
+    }
+  }
+
+  console.log('💾 Preparing payment order with:', {
     id,
     orderId,
-    clientId: data.clientId,
-    amount: data.amount,
-    status: "pending",
+    cartItemsSize: cartItemsJson?.length || 0,
+    shippingInfoSize: shippingInfoJson?.length || 0
+  })
+
+  // Create a corresponding pending Order so the client sees the order in their dashboard
+  let createdOrderId: string | null = null
+  try {
+    if (data.clientId && data.cartItems && data.shippingInfo) {
+      // Map cart items to createOrder format
+      const items = Array.isArray(data.cartItems) ? data.cartItems.map((it: any) => ({
+        productId: it.productId,
+        variantId: it.variantId,
+        productName: it.productName || it.name || '',
+        variantName: it.variantName || it.variant || undefined,
+        sku: it.sku || undefined,
+        quantity: Number(it.quantity) || 1,
+        unitPrice: Number(it.unitPrice || it.price || 0),
+        totalPrice: Number(it.totalPrice || (Number(it.unitPrice || it.price || 0) * Number(it.quantity || 1))),
+        customization: it.customization || undefined
+      })) : []
+
+      const orderData = {
+        clientId: data.clientId || null,
+        orderNumber: generateOrderNumber(),
+        subtotal: data.shippingInfo?.subtotal || 0,
+        taxAmount: data.shippingInfo?.taxAmount || 0,
+        shippingAmount: data.shippingInfo?.shippingAmount || 0,
+        discountAmount: data.shippingInfo?.discountAmount || 0,
+        totalAmount: data.amount,
+        shippingName: data.shippingInfo?.shippingName || '',
+        shippingPhone: data.shippingInfo?.shippingPhone || '',
+        shippingAddressLine1: data.shippingInfo?.shippingAddressLine1 || '',
+        shippingAddressLine2: data.shippingInfo?.shippingAddressLine2 || null,
+        shippingCity: data.shippingInfo?.shippingCity || '',
+        shippingState: data.shippingInfo?.shippingState || '',
+        shippingPostalCode: data.shippingInfo?.shippingPostalCode || '',
+        requiresShipping: data.shippingInfo?.requiresShipping !== false,
+        deliveryLatitude: data.shippingInfo?.deliveryLatitude,
+        deliveryLongitude: data.shippingInfo?.deliveryLongitude,
+        productionLatitude: data.shippingInfo?.productionLatitude,
+        productionLongitude: data.shippingInfo?.productionLongitude,
+        distanceKm: data.shippingInfo?.distanceKm,
+        deliveryCostPerKm: data.shippingInfo?.deliveryCostPerKm,
+        paymentMethod: data.shippingInfo?.paymentMethod || 'upi',
+        customerNotes: data.shippingInfo?.customerNotes,
+        items
+      }
+
+      // Create order but do not decrement stock yet (reserve only)
+      try {
+        const order = await createOrder(orderData, { skipStockUpdate: true })
+        if (order) {
+          createdOrderId = order.id
+          console.log('✅ Created pending order for payment flow:', createdOrderId)
+        }
+      } catch (err) {
+        console.error('⚠️ Failed to create pending order for payment flow:', err)
+      }
+    }
+
+    await execute(
+      `INSERT INTO payment_orders (id, order_id, client_id, amount, status, cart_items, shipping_info, created_order_id)
+       VALUES (?, ?, ?, ?, 'pending', ?, ?, ?)`,
+      [id, orderId, data.clientId || null, data.amount, cartItemsJson, shippingInfoJson, createdOrderId]
+    )
+
+    return {
+      id,
+      orderId,
+      clientId: data.clientId,
+      amount: data.amount,
+      status: "pending",
+      cartItems: data.cartItems,
+      shippingInfo: data.shippingInfo,
+      createdOrderId: createdOrderId || undefined
+    }
+  } catch (e) {
+    console.error('❌ Error storing payment order:', e)
+    throw e
   }
 }
 
@@ -2320,6 +2446,8 @@ export async function submitPaymentProof(data: {
 
 export async function getPaymentOrders(options?: {
   status?: PaymentOrder["status"]
+  limit?: number
+  offset?: number
 }): Promise<PaymentOrder[]> {
   await ensurePaymentSchema()
 
@@ -2330,34 +2458,95 @@ export async function getPaymentOrders(options?: {
     params.push(options.status)
   }
 
+  const limit = options?.limit || 100
+  const offset = options?.offset || 0
+  params.push(limit.toString(), offset.toString())
+
   const rows = await query<RowDataPacket[]>(
     `SELECT
       p.id,
+      p.created_order_id as createdOrderId,
       p.order_id as orderId,
       p.client_id as clientId,
       p.amount,
       p.status,
       p.utr,
       p.screenshot_url as screenshotUrl,
+      p.cart_items as cartItems,
+      p.shipping_info as shippingInfo,
       p.created_at as createdAt,
       p.updated_at as updatedAt
     FROM payment_orders p
     ${whereClause}
-    ORDER BY p.created_at DESC`,
+    ORDER BY p.id DESC
+    LIMIT ? OFFSET ?`,
     params
   )
+
+  const safeJsonParse = (value: any) => {
+    if (!value) return undefined
+    try {
+      if (typeof value === 'object') return value
+      return JSON.parse(value)
+    } catch (e) {
+      return undefined
+    }
+  }
 
   return rows.map(row => ({
     id: row.id,
     orderId: row.orderId,
     clientId: row.clientId || undefined,
+    createdOrderId: row.createdOrderId || undefined,
     amount: parseFloat(row.amount),
     status: row.status,
     utr: row.utr || undefined,
     screenshotUrl: row.screenshotUrl || undefined,
+    cartItems: safeJsonParse(row.cartItems),
+    shippingInfo: safeJsonParse(row.shippingInfo),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   }))
+}
+
+// Finalize a pending order after payment is confirmed: decrement stock and update order status/payment
+export async function finalizeOrderPayment(orderId: string): Promise<boolean> {
+  await ensureDeliverySchema()
+  const connection = await getConnection()
+  try {
+    await connection.beginTransaction()
+
+    // Get order items
+    const items = await query<RowDataPacket[]>(
+      `SELECT variant_id as variantId, quantity FROM order_items WHERE order_id = ?`,
+      [orderId]
+    )
+
+    // Decrement stock for variants
+    for (const it of items) {
+      if (it.variantId) {
+        await connection.execute(
+          `UPDATE product_variants SET stock_quantity = GREATEST(0, stock_quantity - ?) WHERE id = ?`,
+          [it.quantity, it.variantId]
+        )
+      }
+    }
+
+    // Update order payment_status and status
+    await connection.execute(
+      `UPDATE orders SET payment_status = 'paid', status = 'confirmed', updated_at = NOW() WHERE id = ?`,
+      [orderId]
+    )
+
+    await connection.commit()
+    return true
+  } catch (e) {
+    console.error('Error finalizing order payment:', e)
+    await connection.rollback()
+    return false
+  } finally {
+    connection.release()
+  }
 }
 
 export async function updatePaymentOrderStatus(
@@ -2374,6 +2563,174 @@ export async function updatePaymentOrderStatus(
   )
 
   return result.affectedRows > 0
+}
+
+// Set order status and optionally payment_status for an order
+export async function setOrderStatus(
+  orderId: string,
+  status: string,
+  paymentStatus?: string
+): Promise<boolean> {
+  await ensureDeliverySchema()
+  try {
+    if (paymentStatus) {
+      const res = await execute(
+        `UPDATE orders SET status = ?, payment_status = ?, updated_at = NOW() WHERE id = ?`,
+        [status, paymentStatus, orderId]
+      )
+      return res.affectedRows > 0
+    } else {
+      const res = await execute(
+        `UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?`,
+        [status, orderId]
+      )
+      return res.affectedRows > 0
+    }
+  } catch (e) {
+    console.error('Error setting order status:', e)
+    return false
+  }
+}
+
+export async function createOrderFromPaymentOrder(
+  paymentOrderId: string,
+  clientId: string
+): Promise<Order | null> {
+  try {
+    console.log('🔍 Starting createOrderFromPaymentOrder for:', { paymentOrderId, clientId })
+    
+    // Get the payment order with cart items and shipping info
+    const paymentOrders = await query<RowDataPacket[]>(
+      `SELECT id, cart_items, shipping_info, amount FROM payment_orders WHERE id = ? AND client_id = ?`,
+      [paymentOrderId, clientId]
+    )
+
+    if (paymentOrders.length === 0) {
+      console.error('❌ Payment order not found:', { paymentOrderId, clientId })
+      return null
+    }
+
+    const paymentOrder = paymentOrders[0]
+    console.log('✅ Found payment order:', paymentOrder.id)
+    
+    let cartItems = []
+    let shippingInfo = {}
+
+    // Parse/extract cart items - mysql2 with JSON column returns objects, not strings
+    try {
+      if (paymentOrder.cart_items) {
+        if (Array.isArray(paymentOrder.cart_items)) {
+          // Already an array (mysql2 returned parsed JSON)
+          cartItems = paymentOrder.cart_items
+          console.log('✅ Cart items is already array:', cartItems.length)
+        } else if (typeof paymentOrder.cart_items === 'string') {
+          // String that needs parsing
+          cartItems = JSON.parse(paymentOrder.cart_items)
+          console.log('✅ Cart items parsed from string:', cartItems.length)
+        } else if (typeof paymentOrder.cart_items === 'object') {
+          // Object but not array - convert to array
+          console.log('⚠️ Cart items is object, converting...')
+          cartItems = Object.values(paymentOrder.cart_items)
+        }
+      }
+      console.log('✅ Cart items extracted:', cartItems.length)
+    } catch (e) {
+      console.error('❌ Error parsing cart items:', e)
+      return null
+    }
+
+    // Parse/extract shipping info - mysql2 with JSON column returns objects, not strings
+    try {
+      if (paymentOrder.shipping_info) {
+        if (typeof paymentOrder.shipping_info === 'string') {
+          // String that needs parsing
+          shippingInfo = JSON.parse(paymentOrder.shipping_info)
+          console.log('✅ Shipping info parsed from string')
+        } else if (typeof paymentOrder.shipping_info === 'object' && !Array.isArray(paymentOrder.shipping_info)) {
+          // Already an object (mysql2 returned parsed JSON)
+          shippingInfo = paymentOrder.shipping_info
+          console.log('✅ Shipping info is already object')
+        } else {
+          console.log('⚠️ Unexpected shipping info type:', typeof paymentOrder.shipping_info)
+        }
+      }
+      console.log('✅ Shipping info extracted:', Object.keys(shippingInfo).length, 'fields')
+    } catch (e) {
+      console.error('❌ Error parsing shipping info:', e)
+      return null
+    }
+
+    if (cartItems.length === 0) {
+      console.error('❌ No cart items in payment order')
+      return null
+    }
+
+    // Create order with data from payment order
+    const orderData = {
+      clientId,
+      orderNumber: generateOrderNumber(),
+      subtotal: shippingInfo.subtotal || 0,
+      taxAmount: shippingInfo.taxAmount || 0,
+      shippingAmount: shippingInfo.shippingAmount || 0,
+      discountAmount: shippingInfo.discountAmount || 0,
+      totalAmount: paymentOrder.amount,
+      shippingName: shippingInfo.shippingName || '',
+      shippingPhone: shippingInfo.shippingPhone || '',
+      shippingAddressLine1: shippingInfo.shippingAddressLine1 || '',
+      shippingAddressLine2: shippingInfo.shippingAddressLine2,
+      shippingCity: shippingInfo.shippingCity || '',
+      shippingState: shippingInfo.shippingState || '',
+      shippingPostalCode: shippingInfo.shippingPostalCode || '',
+      requiresShipping: shippingInfo.requiresShipping !== false,
+      deliveryLatitude: shippingInfo.deliveryLatitude,
+      deliveryLongitude: shippingInfo.deliveryLongitude,
+      productionLatitude: shippingInfo.productionLatitude,
+      productionLongitude: shippingInfo.productionLongitude,
+      distanceKm: shippingInfo.distanceKm,
+      deliveryCostPerKm: shippingInfo.deliveryCostPerKm,
+      paymentMethod: shippingInfo.paymentMethod || 'upi',
+      customerNotes: shippingInfo.customerNotes,
+      items: cartItems
+    }
+
+    console.log('📝 Creating order with:', {
+      clientId: orderData.clientId,
+      itemCount: orderData.items.length,
+      totalAmount: orderData.totalAmount
+    })
+
+    // Create the order (it manages its own transaction)
+    const order = await createOrder(orderData)
+    
+    if (!order) {
+      console.error('❌ createOrder returned null/undefined')
+      return null
+    }
+    
+    console.log('✅ Order created:', order.id)
+    
+    // Clear the client's cart
+    try {
+      await query(
+        `DELETE FROM cart_items WHERE cart_id IN (SELECT id FROM carts WHERE client_id = ?)`,
+        [clientId]
+      )
+      await query(
+        `DELETE FROM carts WHERE client_id = ?`,
+        [clientId]
+      )
+      console.log('✅ Cart cleared for client:', clientId)
+    } catch (e) {
+      console.error('⚠️ Error clearing cart:', e)
+      // Don't fail the order creation just because cart cleanup failed
+    }
+    
+    console.log('🎉 Successfully created order from payment order')
+    return order
+  } catch (error) {
+    console.error('❌ Error creating order from payment order:', error instanceof Error ? error.message : error)
+    return null
+  }
 }
 
 // =====================================================

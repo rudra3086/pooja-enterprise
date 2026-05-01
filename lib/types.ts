@@ -273,10 +273,13 @@ export interface PaymentOrder {
   id: string
   orderId: string
   clientId?: string
+  createdOrderId?: string
   amount: number
   status: "pending" | "verification_pending" | "paid" | "rejected"
   utr?: string
   screenshotUrl?: string
+  cartItems?: any[] // Cart items needed to create order
+  shippingInfo?: any // Shipping details and order metadata
   createdAt?: Date
   updatedAt?: Date
 }

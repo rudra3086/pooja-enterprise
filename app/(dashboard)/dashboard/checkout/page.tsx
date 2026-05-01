@@ -177,6 +177,40 @@ export default function CheckoutPage() {
 
     try {
       if (paymentMethod === "upi") {
+        // Store checkout session for payment page to use
+        const checkoutSession = {
+          cartItems: items.map(item => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            quantity: item.quantity,
+            unitPrice: item.price,
+            totalPrice: item.price * item.quantity,
+            productName: item.productName,
+            variantName: item.variantName,
+            sku: item.sku,
+            customization: item.customization,
+          })),
+          shippingInfo: {
+            requiresShipping,
+            shippingName: shippingInfo.name,
+            shippingPhone: shippingInfo.phone,
+            shippingAddressLine1: shippingInfo.address,
+            shippingAddressLine2: undefined,
+            shippingCity: shippingInfo.city,
+            shippingState: shippingInfo.state,
+            shippingPostalCode: shippingInfo.pincode,
+            shippingCountry: "India",
+            subtotal: totalPrice,
+            taxAmount: gst,
+            shippingAmount: shippingAmount,
+            discountAmount: 0,
+            paymentMethod: "upi",
+            deliveryLatitude: deliveryLocation?.latitude,
+            deliveryLongitude: deliveryLocation?.longitude,
+            customerNotes: shippingInfo.notes,
+          }
+        }
+        sessionStorage.setItem('checkoutSession', JSON.stringify(checkoutSession))
         router.push(`/payment?amount=${encodeURIComponent(grandTotal.toFixed(2))}`)
         return
       }
