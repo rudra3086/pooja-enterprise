@@ -54,7 +54,11 @@ export async function GET(request: NextRequest) {
     const totalOrders = total
     const activeOrders = orders.filter(o => o.status === "pending" || o.status === "confirmed").length
     const completedOrders = orders.filter(o => o.status === "delivered").length
-    const totalSpent = orders.reduce((sum, o) => sum + o.totalAmount, 0)
+    // Only count completed/paid orders towards total spent
+    const countedStatuses = new Set(["confirmed", "processing", "shipped", "delivered"])
+    const totalSpent = orders
+      .filter(o => countedStatuses.has(o.status) || o.paymentStatus === 'paid')
+      .reduce((sum, o) => sum + (o.totalAmount || 0), 0)
 
     // Get recent 5 orders
     const recentOrders = orders.slice(0, 5).map(order => ({
