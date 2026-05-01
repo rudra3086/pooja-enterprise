@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getSessionByToken, updatePaymentOrderStatus, getPaymentOrders, createOrderFromPaymentOrder, finalizeOrderPayment, setOrderStatus } from "@/lib/db"
+import { unlink } from "fs/promises"
+import path from "path"
+import { getSessionByToken, updatePaymentOrderStatus, getPaymentOrders, createOrderFromPaymentOrder, finalizeOrderPayment, setOrderStatus, deletePaymentOrderByOrderId } from "@/lib/db"
 import type { ApiResponse } from "@/lib/types"
 
 async function isAdminAuthenticated(request: NextRequest): Promise<boolean> {
@@ -156,6 +158,55 @@ export async function PATCH(
     console.error("Admin update payment status error:", error)
     return NextResponse.json<ApiResponse>(
       { success: false, error: "Failed to update payment status" },
+      { status: 500 }
+    )
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ orderId: string }> }
+) {
+  try {
+    if (!await isAdminAuthenticated(request)) {
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: "Admin authentication required" },
+        { status: 401 }
+      )
+    }
+
+    const { orderId } = await params
+
+    // Only allow deleting rejected payment orders
+    const result = await deletePaymentOrderByOrderId(orderId)
+
+    if (result.affectedRows === 0) {
+      return NextResponse.json<ApiResponse>({
+        success: false,
+        error: "No rejected payment order found to delete",
+      }, { status: 404 })
+    }
+
+    // If there was a screenshot file saved, remove it from disk
+    if (result.screenshotPath) {
+      try {
+        // screenshotPath is like '/uploads/payment-proofs/filename.ext'
+        const safePath = path.join(process.cwd(), 'public', result.screenshotPath.replace(/^\//, ''))
+        await unlink(safePath)
+        console.log('Removed payment screenshot:', safePath)
+      } catch (e) {
+        console.warn('Failed to remove screenshot file for deleted payment:', e)
+      }
+    }
+
+    return NextResponse.json<ApiResponse>({
+      success: true,
+      message: 'Rejected payment deleted',
+    })
+  } catch (error) {
+    console.error('Admin delete payment error:', error)
+    return NextResponse.json<ApiResponse>(
+      { success: false, error: 'Failed to delete payment' },
       { status: 500 }
     )
   }

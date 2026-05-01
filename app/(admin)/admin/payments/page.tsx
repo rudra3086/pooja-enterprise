@@ -29,6 +29,9 @@ export default function AdminPaymentsPage() {
   const [orders, setOrders] = useState<PaymentOrder[]>([])
   const [loading, setLoading] = useState(true)
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Record<string, boolean>>({})
+  const [bulkDeleting, setBulkDeleting] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
 
@@ -68,6 +71,10 @@ export default function AdminPaymentsPage() {
     setCurrentPage(1)
     loadOrders(1)
   }, [statusFilter])
+
+  useEffect(() => {
+    setSelectedIds({})
+  }, [orders])
 
   const totals = useMemo(() => {
     return orders.reduce(
@@ -112,24 +119,112 @@ export default function AdminPaymentsPage() {
     }
   }
 
+  const deletePayment = async (orderId: string) => {
+    if (!confirm(`Delete rejected payment ${orderId}? This cannot be undone.`)) return
+
+    try {
+      setDeletingOrderId(orderId)
+      const response = await fetch(`/api/admin/payments/${orderId}`, {
+        method: "DELETE",
+      })
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.error || "Failed to delete payment")
+      }
+
+      // Remove from UI list
+      setOrders(prev => prev.filter(o => o.orderId !== orderId))
+
+      toast({
+        title: "Deleted",
+        description: `Rejected payment ${orderId} deleted`,
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Unable to delete payment",
+        variant: "destructive",
+      })
+    } finally {
+      setDeletingOrderId(null)
+    }
+  }
+
+  const toggleSelect = (orderId: string) => {
+    setSelectedIds(prev => ({ ...prev, [orderId]: !prev[orderId] }))
+  }
+
+  const selectAllOnPage = (checked: boolean) => {
+    const next: Record<string, boolean> = {}
+    orders.forEach(o => { next[o.orderId] = checked })
+    setSelectedIds(next)
+  }
+
+  const deleteSelected = async () => {
+    const selected = Object.keys(selectedIds).filter(id => selectedIds[id])
+    if (selected.length === 0) {
+      toast({ title: 'No selection', description: 'Select payments to delete', variant: 'destructive' })
+      return
+    }
+
+    const rejectedSelected = orders.filter(o => selected.includes(o.orderId) && o.status === 'rejected').map(o => o.orderId)
+    if (rejectedSelected.length === 0) {
+      toast({ title: 'No rejected payments selected', description: 'Only rejected payments can be deleted', variant: 'destructive' })
+      return
+    }
+
+    if (!confirm(`Delete ${rejectedSelected.length} rejected payment(s)? This cannot be undone.`)) return
+
+    try {
+      setBulkDeleting(true)
+      const results = await Promise.all(rejectedSelected.map(id => fetch(`/api/admin/payments/${id}`, { method: 'DELETE' }).then(r => r.json())))
+      const succeededIds = rejectedSelected.filter((id, i) => results[i].success)
+      const failed = results.filter(r => !r.success)
+
+      setOrders(prev => prev.filter(o => !succeededIds.includes(o.orderId)))
+      setSelectedIds({})
+
+      if (failed.length === 0) {
+        toast({ title: 'Deleted', description: `Deleted ${succeededIds.length} payment(s)` })
+      } else {
+        toast({ title: 'Partial', description: `Deleted ${succeededIds.length} payments; ${failed.length} failed`, variant: 'destructive' })
+      }
+    } catch (e) {
+      toast({ title: 'Error', description: 'Failed to delete selected payments', variant: 'destructive' })
+    } finally {
+      setBulkDeleting(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>UPI Payment Verifications</CardTitle>
-          <div className="w-52">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="verification_pending">Verification Pending</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="rejected">Rejected</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-3">
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={deleteSelected}
+              disabled={bulkDeleting || Object.values(selectedIds).filter(Boolean).length === 0}
+            >
+              Delete Selected
+            </Button>
+            <div className="w-52">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="verification_pending">Verification Pending</SelectItem>
+                  <SelectItem value="paid">Paid</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -147,6 +242,13 @@ export default function AdminPaymentsPage() {
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="border-b text-left">
+                      <th className="px-3 py-2 font-medium">
+                        <input
+                          type="checkbox"
+                          checked={orders.length > 0 && orders.every(o => selectedIds[o.orderId])}
+                          onChange={(e) => selectAllOnPage(e.target.checked)}
+                        />
+                      </th>
                       <th className="px-3 py-2 font-medium">Order ID</th>
                       <th className="px-3 py-2 font-medium">Amount</th>
                       <th className="px-3 py-2 font-medium">Screenshot</th>
@@ -158,6 +260,13 @@ export default function AdminPaymentsPage() {
                   <tbody>
                     {orders.map((order) => (
                       <tr key={order.id} className="border-b align-top">
+                        <td className="px-3 py-3">
+                          <input
+                            type="checkbox"
+                            checked={!!selectedIds[order.orderId]}
+                            onChange={() => toggleSelect(order.orderId)}
+                          />
+                        </td>
                         <td className="px-3 py-3 font-medium">{order.orderId}</td>
                         <td className="px-3 py-3">INR {order.amount.toFixed(2)}</td>
                         <td className="px-3 py-3">
@@ -192,6 +301,16 @@ export default function AdminPaymentsPage() {
                             >
                               Mark Rejected
                             </Button>
+                            {order.status === 'rejected' && (
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => deletePayment(order.orderId)}
+                                disabled={deletingOrderId === order.orderId || updatingOrderId === order.orderId}
+                              >
+                                Delete
+                              </Button>
+                            )}
                           </div>
                         </td>
                       </tr>

@@ -2592,6 +2592,30 @@ export async function setOrderStatus(
   }
 }
 
+export async function deletePaymentOrderByOrderId(orderId: string): Promise<{ affectedRows: number, screenshotPath?: string | null }> {
+  await ensurePaymentSchema()
+
+  try {
+    // Retrieve screenshot path so caller can remove file if desired
+    const rows = await query<RowDataPacket[]>(
+      `SELECT screenshot_url as screenshotUrl FROM payment_orders WHERE order_id = ?`,
+      [orderId]
+    )
+
+    const screenshotUrl = rows && rows.length ? rows[0].screenshotUrl || null : null
+
+    const result = await execute(
+      `DELETE FROM payment_orders WHERE order_id = ? AND status = 'rejected'`,
+      [orderId]
+    )
+
+    return { affectedRows: result.affectedRows, screenshotPath: screenshotUrl }
+  } catch (e) {
+    console.error('Error deleting payment order:', e)
+    throw e
+  }
+}
+
 export async function createOrderFromPaymentOrder(
   paymentOrderId: string,
   clientId: string
